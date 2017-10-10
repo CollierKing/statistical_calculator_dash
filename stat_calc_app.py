@@ -22,22 +22,11 @@ app.config.supress_callback_exceptions = True
 
 # HOME
 ##############################################################################
-##############################################################################
-
 app.layout = html.Div([
     dcc.Location(id='url', refresh=False),
     html.Div(id='page-content'),
     html.Br(),
-    # html.Label('Power (1-False Negative Rate)'),
-
-    # dcc.Slider(
-    #     min=0,
-    #     max=10,
-    #     marks={i: 'Label {}'.format(i) if i == 0.1 else str(i) for i in range(0, 1)},
-    #     value=8,
-    # )
 ])
-
 
 index_page = html.Div([
     html.H1('Statistical Tools:'),
@@ -49,89 +38,92 @@ index_page = html.Div([
 
 # PAGE 1 - SAMPLE SIZE CALCULATOR
 ##############################################################################
-##############################################################################
-
 page_1_layout = html.Div([
+        
     html.H1('Sample Size Calculator'),
-    html.Br(),
-
-    # INPUT BOX 1 - CONV RATE
-    html.Label('Baseline Rate'),
-    dcc.Input(
-        id='baseline_input',
-        placeholder='0.3',
-        type='text',
-        value='0.3'
-    ),
-    html.Div(id='baseline_content'), #WIP
-    html.Br(),
-
-    # INPUT BOX 2 - EFFECT SIZE
-    html.Label('Effect Size'),
-    dcc.Input(
-        id='effect_size_input',
-        placeholder='0.05',
-        type='text',
-        value='0.35'
-    ),
-    html.Div(id='effect_size_content'), #WIP
-    html.Br(),
-
-    # INPUT BOX 3 - POWER LEVEL
-    html.Label('Power (1-False Negative Rate)'),
-    dcc.Input(
-        id='statistical_power_input',
-        placeholder='0.8',
-        type='text',
-        value='0.8'
-    ),
-    html.Div(id='statistical_power_content'),
-    html.Br(),
-
-    # INPUT BOX 4 - SIGNIF LEVEL
-    html.Label('Significance Level'),
-    dcc.Input(
-        id='significance_level_input',
-        placeholder='0.05',
-        type='text',
-        value='0.05'
-    ),
-    html.Div(id='significance_level_content'),
-    html.Br(),
-
-    html.Label('Sample Size:'),
-    html.Div(id='sample_size_content'),
-    html.Br(),
-    html.Br(),
-    dcc.Link('Go to Page 2', href='/chi_squared_test'),
-    html.Br(),
     dcc.Link('Go back to home', href='/'),
 
-])
+    html.Div(
+        [
+            # INPUT BOX 1 - CONV RATE
+            html.Label('Baseline Rate'),
+            dcc.Input(
+                id='baseline_input',
+                placeholder='0.3',
+                type='text',
+                value='0.3'
+            ),
+            html.Br(),
 
-#BASELINE
-@app.callback(dash.dependencies.Output('baseline_content', 'children'),
-              [dash.dependencies.Input('baseline_input', 'value')])
-def baseline_content(value):
-    return 'You have selected "{}"'.format(value)
+            # INPUT BOX 2 - EFFECT SIZE
+            html.Label('Effect Size'),
+            dcc.Input(
+                id='effect_size_input',
+                placeholder='0.05',
+                type='text',
+                value='0.35'
+            ),
+            html.Br(),
 
-#EFFECT
-@app.callback(dash.dependencies.Output('effect_size_content', 'children'),
-              [dash.dependencies.Input('effect_size_input', 'value')])
-def effect_size_content(value):
-    return 'You have selected "{}"'.format(value)
+            # INPUT BOX 3 - POWER LEVEL
+            html.Label('Power (1-False Negative Rate)'),
+            dcc.Input(
+                id='statistical_power_input',
+                placeholder='0.8',
+                type='text',
+                value='0.8'
+            ),
+            html.Br(),
 
-#POWER
-@app.callback(dash.dependencies.Output('statistical_power_content', 'children'),
-              [dash.dependencies.Input('statistical_power_input', 'value')])
-def statistical_power_content(value):
-    return 'You have selected "{}"'.format(value)
+            # INPUT BOX 4 - SIGNIF LEVEL
+            html.Label('Significance Level'),
+            dcc.Input(
+                id='significance_level_input',
+                placeholder='0.05',
+                type='text',
+                value='0.05'
+            ),
+            html.Br(),
 
-#SIGNIF
-@app.callback(dash.dependencies.Output('significance_level_content', 'children'),
-              [dash.dependencies.Input('significance_level_input', 'value')])
-def significance_level_content(value):
-    return 'You have selected "{}"'.format(value)
+            html.Label('Sample Size:'),
+            html.Div(id='sample_size_content'),
+            html.Br(),
+            html.Br(),
+        ],
+    ),
+    html.Div(
+        [
+            dcc.Graph(id='example-graph')
+        ],
+    ),
+    html.Br(),
+    html.Br(),
+    html.Label('Significance Level:'),
+    dcc.Slider(
+        id='sig_level_test',
+        min=0,
+        max=20,
+        marks={i: 'Label {}'.format(i) if i == 0.05 else str(i) for i in range(0, 1)},
+        value=19,
+    ),
+    
+],style={'columnCount': 2})
+
+#BAR GRAPH
+@app.callback(dash.dependencies.Output('example-graph','figure'),
+            [dash.dependencies.Input('baseline_input','value'),
+            dash.dependencies.Input('effect_size_input','value')
+            ])
+def update_graph(baseline_input,effect_size_input):
+    return {
+            'data': [
+                {'x': [1, 2], 'y': [baseline_input,effect_size_input], 'type': 'bar', 'name': 'SF'},
+                    # {'x': [1, 2, 3], 'y': [2, 4, 5], 'type': 'bar', 'name': u'Montréal'},
+                ],
+                'layout': {
+                    'title': 'Dash Data Visualization'
+                }
+            }
 
 #SAMPLE SIZE
 @app.callback(dash.dependencies.Output('sample_size_content', 'children'),
@@ -256,18 +248,6 @@ def chi_squared_result(sample1_successes, sample1_trials,sample2_successes, samp
     result = proportions_chisquare(successes,trials)
     p = result[1]
     return 'The p-value is: "{}"'.format(p)
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 # Update the index
