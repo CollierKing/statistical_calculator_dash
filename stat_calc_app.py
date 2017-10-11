@@ -91,6 +91,8 @@ page_1_layout = html.Div([
             html.Br(),
         ],
     ),
+    html.Br(),
+    html.Br(),
     html.Div(
         [
             dcc.Graph(id='example-graph')
@@ -109,16 +111,20 @@ page_1_layout = html.Div([
     
 ],style={'columnCount': 2})
 
-#BAR GRAPH
+#BAR GRAPH - SAMPLE SIZE
 @app.callback(dash.dependencies.Output('example-graph','figure'),
             [dash.dependencies.Input('baseline_input','value'),
             dash.dependencies.Input('effect_size_input','value')
             ])
 def update_graph(baseline_input,effect_size_input):
+    err_bar = float(effect_size_input)-float(baseline_input)
     return {
             'data': [
-                {'x': [1, 2], 'y': [baseline_input,effect_size_input], 'type': 'bar', 'name': 'SF'},
-                    # {'x': [1, 2, 3], 'y': [2, 4, 5], 'type': 'bar', 'name': u'Montréal'},
+                {'x': [1], 
+                'y': [baseline_input], 
+                'error_y':{
+                    "array":[err_bar]},
+                'type': 'bar', 'name': 'SF'},
                 ],
                 'layout': {
                     'title': 'Dash Data Visualization'
@@ -157,83 +163,137 @@ page_2_layout = html.Div([
     dcc.Markdown(children=markdown_text_chi_squared),
     html.Br(),
 
-    # INPUT BOX 1 - Sample1 Successes
-    html.Label('Sample 1: # successes'),
-    dcc.Input(
-        id='sample1_successes',
-        placeholder='150',
-        type='text',
-        value='150'
-    ),
-    html.Div(id='sample1_successes_out'), #WIP
-    html.Br(),
+        html.Div(
+        [
+            # INPUT BOX 1 - Sample1 Successes
+            html.Label('Sample 1: # successes'),
+            dcc.Input(
+                id='sample1_successes',
+                placeholder='150',
+                type='text',
+                value='150'
+            ),
+            # html.Div(id='sample1_successes_out'), #WIP
+            html.Br(),
 
-    # INPUT BOX 2 - Sample1 Trials
-    html.Label('Sample 1: # trials'),
-    dcc.Input(
-        id='sample1_trials',
-        placeholder='1000',
-        type='text',
-        value='1000'
-    ),
-    html.Div(id='sample1_trials_out'), #WIP
-    html.Br(),
+            # INPUT BOX 2 - Sample1 Trials
+            html.Label('Sample 1: # trials'),
+            dcc.Input(
+                id='sample1_trials',
+                placeholder='1000',
+                type='text',
+                value='1000'
+            ),
+            # html.Div(id='sample1_trials_out'), #WIP
+            html.Br(),
 
-    # INPUT BOX 3 - Sample2 Successes
-    html.Label('Sample 2: # successes'),
-    dcc.Input(
-        id='sample2_successes',
-        placeholder='180',
-        type='text',
-        value='180'
-    ),
-    html.Div(id='sample2_successes_out'),
-    html.Br(),
+            # INPUT BOX 3 - Sample2 Successes
+            html.Label('Sample 2: # successes'),
+            dcc.Input(
+                id='sample2_successes',
+                placeholder='180',
+                type='text',
+                value='180'
+            ),
+            # html.Div(id='sample2_successes_out'),
+            html.Br(),
 
-    # INPUT BOX 4 - Sample2 Trials
-    html.Label('Sample 2: # trials'),
-    dcc.Input(
-        id='sample2_trials',
-        placeholder='1000',
-        type='text',
-        value='1000'
-    ),
-    html.Div(id='sample2_trials_out'),
-    html.Br(),
+            # INPUT BOX 4 - Sample2 Trials
+            html.Label('Sample 2: # trials'),
+            dcc.Input(
+                id='sample2_trials',
+                placeholder='1000',
+                type='text',
+                value='1000'
+            ),
+            # html.Div(id='sample2_trials_out'),
+        
+            html.Br(),
 
-    html.Label('Result p-value:'),
-    html.Div(id='chisq_content'),
+            html.Label('Result p-value:'),
+            html.Div(id='chisq_content'),
+        ]),
+        html.Br(),
+        html.Br(),
+        html.Br(),
+        html.Br(),
+        html.Br(),
+        html.Br(),
+    html.Div(
+        [
+            dcc.Graph(id='chisq-graph')
+
+        ]),
+
+
     html.Br(),
     html.Br(),
     dcc.Link('Go to Page 1', href='/sample_size_calculator'),
     html.Br(),
     dcc.Link('Go back to home', href='/'),
 
-])
+],style={'columnCount': 2})
+
+#BAR GRAPH - CHISQ - SAMPLE PROPORTIONS
+@app.callback(dash.dependencies.Output('chisq-graph','figure'),
+            [dash.dependencies.Input('sample1_trials','value'),
+            dash.dependencies.Input('sample1_successes','value'),
+            dash.dependencies.Input('sample2_trials','value'),
+            dash.dependencies.Input('sample2_successes','value')
+            ])
+def update_chisqgraph(sample1_trials,sample1_successes,
+                        sample2_trials,sample2_successes):
+    sample1_prop = int(sample1_successes)/int(sample1_trials)
+    sample2_prop = int(sample2_successes)/int(sample2_trials)
+    return {
+            'data': [
+                {'x': [1,2], 
+                'y': [sample1_prop,sample2_prop], 
+                # 'error_y':{
+                #     "array":[err_bar]},
+                'type': 'bar', 'name': 'SF2'},
+                ],
+                'layout': {
+                    'title': 'Dash Data Visualization'
+                }
+            }
+
+            #     return {
+            # 'data': [
+            #     {'x': [1], 
+            #     'y': [baseline_input], 
+            #     'error_y':{
+            #         "array":[err_bar]},
+            #     'type': 'bar', 'name': 'SF'},
+            #     ],
+            #     'layout': {
+            #         'title': 'Dash Data Visualization'
+            #     }
+            # }
 
 # Sample1 Successes
-@app.callback(dash.dependencies.Output('sample1_successes_out', 'children'),
-              [dash.dependencies.Input('sample1_successes', 'value')])
-def sample1_successes(value):
-    return 'You have selected "{}"'.format(value)
+# @app.callback(dash.dependencies.Output('sample1_successes_out', 'children'),
+#               [dash.dependencies.Input('sample1_successes', 'value')])
+# def sample1_successes(value):
+#     return 'You have selected "{}"'.format(value)
 
-# Sample1 Trials
-@app.callback(dash.dependencies.Output('sample1_trials_out', 'children'),
-              [dash.dependencies.Input('sample1_trials', 'value')])
-def sample1_trials(value):
-    return 'You have selected "{}"'.format(value)
+# # Sample1 Trials
+# @app.callback(dash.dependencies.Output('sample1_trials_out', 'children'),
+#               [dash.dependencies.Input('sample1_trials', 'value')])
+# def sample1_trials(value):
+#     return 'You have selected "{}"'.format(value)
 
-# Sample2 Successes
-@app.callback(dash.dependencies.Output('sample2_successes_out', 'children'),
-              [dash.dependencies.Input('sample2_successes', 'value')])
-def sample2_successes(value):
-    return 'You have selected "{}"'.format(value)
+# # Sample2 Successes
+# @app.callback(dash.dependencies.Output('sample2_successes_out', 'children'),
+#               [dash.dependencies.Input('sample2_successes', 'value')])
+# def sample2_successes(value):
+#     return 'You have selected "{}"'.format(value)
 
-# Samples2 Trials
-@app.callback(dash.dependencies.Output('sample2_trials_out', 'children'),
-              [dash.dependencies.Input('sample2_trials', 'value')])
-def sample2_trials(value):
-    return 'You have selected "{}"'.format(value)
+# # Samples2 Trials
+# @app.callback(dash.dependencies.Output('sample2_trials_out', 'children'),
+#               [dash.dependencies.Input('sample2_trials', 'value')])
+# def sample2_trials(value):
+#     return 'You have selected "{}"'.format(value)
 
 # ChiSq
 @app.callback(dash.dependencies.Output('chisq_content', 'children'),
