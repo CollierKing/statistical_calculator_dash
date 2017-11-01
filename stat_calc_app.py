@@ -18,6 +18,12 @@ from statsmodels.stats.proportion import proportions_chisquare
 from scipy.stats import norm
 ## t test
 from scipy.stats import ttest_ind, ttest_ind_from_stats
+## poisson test
+from scipy.stats import binom_test
+from scipy.stats import beta
+from scipy.stats import poisson
+# survival
+from lifelines.statistics import logrank_test
 
 print(dcc.__version__) # 0.6.0 or above is required
 
@@ -38,8 +44,15 @@ app.layout = html.Div([
     html.Br(),
 ])
 
+markdown_intro = '''
+    This website is a collection of calculators for solving certain statistical questions.
+    '''
+
 index_page = html.Div([
     html.H1('Statistical Tools:'),
+    
+    dcc.Markdown(children=markdown_intro),
+
     html.Br(),
     dcc.Link('Sample Size Calculator', href='/sample_size_calculator'),
     html.Br(),
@@ -48,6 +61,8 @@ index_page = html.Div([
     dcc.Link('2 Sample T-Test',href='/2_sample_ttest'),
     html.Br(),
     dcc.Link('2 Sample Survival Times',href='/2_sample_survival'),
+    html.Br(),
+    dcc.Link('Count Data',href='/count_data'),
     html.Br(),
     dcc.Link('Credit Value at Risk',href='/cvar')
 
@@ -116,15 +131,7 @@ page_1_layout = html.Div([
         ],
     ),
     html.Br(),
-    html.Br(),
-    html.Label('Significance Level:'),
-    dcc.Slider(
-        id='sig_level_test',
-        min=0,
-        max=20,
-        marks={i: 'Label {}'.format(i) if i == 0.05 else str(i) for i in range(0, 1)},
-        value=19,
-    ),
+    html.Br()
     
 ],style={'columnCount': 2})
 
@@ -144,7 +151,7 @@ def update_graph(baseline_input,effect_size_input):
                 'type': 'bar', 'name': 'SF'},
                 ],
                 'layout': {
-                    'title': 'Dash Data Visualization'
+                    'title': 'Baseline with Effect'
                 }
             }
 
@@ -178,6 +185,7 @@ markdown_text_chi_squared = '''
 page_2_layout = html.Div([
     html.H1('Chi Squared Test'),
     dcc.Markdown(children=markdown_text_chi_squared),
+    dcc.Link('Go back to home', href='/'),
     html.Br(),
 
         html.Div(
@@ -254,10 +262,7 @@ page_2_layout = html.Div([
 
 
     html.Br(),
-    html.Br(),
-    dcc.Link('Go to Page 1', href='/sample_size_calculator'),
-    html.Br(),
-    dcc.Link('Go back to home', href='/'),
+    html.Br()
 
 ],style={'columnCount': 2})
 
@@ -291,47 +296,9 @@ def update_chisqgraph(sample1_trials,sample1_successes,
                 'type': 'bar', 'name': 'SF2'},
                 ],
                 'layout': {
-                    'title': 'Dash Data Visualization'
+                    'title': 'Sample Proportions'
                 }
             }
-
-            #     return {
-            # 'data': [
-            #     {'x': [1], 
-            #     'y': [baseline_input], 
-            #     'error_y':{
-            #         "array":[err_bar]},
-            #     'type': 'bar', 'name': 'SF'},
-            #     ],
-            #     'layout': {
-            #         'title': 'Dash Data Visualization'
-            #     }
-            # }
-
-# Sample1 Successes
-# @app.callback(dash.dependencies.Output('sample1_successes_out', 'children'),
-#               [dash.dependencies.Input('sample1_successes', 'value')])
-# def sample1_successes(value):
-#     return 'You have selected "{}"'.format(value)
-
-# # Sample1 Trials
-# @app.callback(dash.dependencies.Output('sample1_trials_out', 'children'),
-#               [dash.dependencies.Input('sample1_trials', 'value')])
-# def sample1_trials(value):
-#     return 'You have selected "{}"'.format(value)
-
-# # Sample2 Successes
-# @app.callback(dash.dependencies.Output('sample2_successes_out', 'children'),
-#               [dash.dependencies.Input('sample2_successes', 'value')])
-# def sample2_successes(value):
-#     return 'You have selected "{}"'.format(value)
-
-# # Samples2 Trials
-# @app.callback(dash.dependencies.Output('sample2_trials_out', 'children'),
-#               [dash.dependencies.Input('sample2_trials', 'value')])
-# def sample2_trials(value):
-#     return 'You have selected "{}"'.format(value)
-
 # ChiSq
 @app.callback(dash.dependencies.Output('chisq_content', 'children'),
               [dash.dependencies.Input('sample1_successes', 'value'),
@@ -371,22 +338,17 @@ page_3_layout = html.Div([
     ),
     html.Br(),
     html.Div(id='sample1_dat_summ'),
-    html.Br(),
-    html.Br(),
-    html.Br(),
-        html.Div([
-            dcc.Graph(id='ttest-graph')
+    # html.Div([
+    #         dcc.Graph(id='ttest-graph')
 
-        ]),
-    html.Br(),
-    html.Br(),
+    #     ]),
+    # html.Br(),
     html.Div(id='ttest_result'),
     html.Br(),
     # dcc.Link('Go to Page 1', href='/sample_size_calculator'),
     html.Br(),
-    dcc.Link('Go back to home', href='/'),
 
-    ],style={'columnCount': 2})
+    ])
 
 #TTEST - RESULT
 @app.callback(dash.dependencies.Output('ttest_result', 'children'),
@@ -398,168 +360,115 @@ def sample1_dat_summ(sample1_dat_ttest,sample2_dat_ttest):
     #if comma separated values
     if "," in sample1_dat_ttest:
         p1 = np.asarray(sample1_dat_ttest.split(','),dtype=np.float32)
-        # p = sum(p)
     # #if space separated values
     elif " " in sample1_dat_ttest:
         # sample1_dat_ttest = sample1_dat_ttest.replace('\n', ',')
         p1 = np.asarray(sample1_dat_ttest.split(' '),dtype=np.float32)
-        # p = sum(p)
     # #if line delimited values
     else:
         sample1_dat_ttest = sample1_dat_ttest.replace('\n', ',')
         p1 = np.asarray(sample1_dat_ttest.split(','),dtype=np.float32)
-    
     #sample 2 input
     #if comma separated values
     if "," in sample2_dat_ttest:
         p2 = np.asarray(sample2_dat_ttest.split(','),dtype=np.float32)
-        # p = sum(p)
     # #if space separated values
     elif " " in sample2_dat_ttest:
         # sample1_dat_ttest = sample1_dat_ttest.replace('\n', ',')
         p2 = np.asarray(sample2_dat_ttest.split(' '),dtype=np.float32)
-        # p = sum(p)
     # #if line delimited values
     else:
         sample2_dat_ttest = sample2_dat_ttest.replace('\n', ',')
         p2 = np.asarray(sample2_dat_ttest.split(','),dtype=np.float32)
 
     t, p = ttest_ind(p1, p2, equal_var=False)
-    return p
+    # return p
+    return 'The p-value is: "{}"'.format(p)
 
 
 
 
 # KERNEL DENSITY - TTEST
-@app.callback(dash.dependencies.Output('ttest-graph','figure'),
-            [dash.dependencies.Input('sample1_dat_ttest','value')])
-def update_ttestgraph(sample1_dat_ttest):
-    #if comma separated values
-    if "," in sample1_dat_ttest:
-        p = np.asarray(sample1_dat_ttest.split(','),dtype=np.float32)
-        # p = sum(p)
-    # #if space separated values
-    elif " " in sample1_dat_ttest:
-        # sample1_dat_ttest = sample1_dat_ttest.replace('\n', ',')
-        p = np.asarray(sample1_dat_ttest.split(' '),dtype=np.float32)
-        # p = sum(p)
-    # #if line delimited values
-    else:
-        sample1_dat_ttest = sample1_dat_ttest.replace('\n', ',')
-        p = np.asarray(sample1_dat_ttest.split(','),dtype=np.float32)
-        # p = sum(p)
-    # np.random.seed(1)
-    # N = 20
-    # X = np.concatenate((np.random.normal(0, 1, 0.3 * N),
-    #                     np.random.normal(5, 1, 0.7 * N)))[:, np.newaxis]
-    # X_plot = np.linspace(-5, 10, 1000)[:, np.newaxis]
-    # bins = 10
-    # X = eval('[' + sample1_dat_ttest + ']')
-    # sample1_dat_ttest = sample1_dat_ttest.split(',')
-    # p = np.asarray(p)
-    
-    np.random.seed(1)
-    N = 20
-    X = np.concatenate((np.random.normal(0, 1, 0.3 * N),
-                        np.random.normal(5, 1, 0.7 * N)))[:, np.newaxis]
-    X_plot = np.linspace(-5, 10, 1000)[:, np.newaxis]
-    bins = 10
-
-
-    kde = KernelDensity(kernel='gaussian', bandwidth=0.75).fit(X)
-    log_dens = kde.score_samples(X_plot)
-
-    return {
-        # go.Figure(
-        'data':[
-            go.Scatter(x=X, y=np.exp(log_dens), 
-                            mode='lines', fill='tozeroy',
-                            line=dict(color='#AAAAFF', width=2))
-            # {'x':[X],
-            # 'y':[np.exp(log_dens)], 
-            # 'mode':'lines', 
-            # 'fill':'tozeroy',
-            # 'line':dict(color='#AAAAFF', width=2)}
-            # go.Bar(
-            #     x=[1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003,
-            #        2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012],
-            #     y=[219, 146, 112, 127, 124, 180, 236, 207, 236, 263,
-            #        350, 430, 474, 526, 488, 537, 500, 439],
-            #     name='Rest of world',
-            #     marker=go.Marker(
-            #         color='rgb(55, 83, 109)'
-            #     )
-            # )
-            ]
-            # 'data': [
-            #     {'x': [1,2], 
-            #     'y': [sample1_prop,sample2_prop], 
-            #     'error_y':{
-            #         "array":[err1,err2]},
-            #     'type': 'bar', 'name': 'SF2'},
-            #     ],
-            #     'layout': {
-            #         'title': 'Dash Data Visualization'
-            #     }
-        }
-
-#SAMPLE 1 Stats
-# @app.callback(dash.dependencies.Output('sample1_dat_summ', 'children'),
-#               [dash.dependencies.Input('sample1_dat_ttest', 'value')
-#               ])
-# def sample1_dat_summ(sample1_dat_ttest):
+# @app.callback(dash.dependencies.Output('ttest-graph','figure'),
+#             [dash.dependencies.Input('sample1_dat_ttest','value')])
+# def update_ttestgraph(sample1_dat_ttest):
 #     #if comma separated values
 #     if "," in sample1_dat_ttest:
 #         p = np.asarray(sample1_dat_ttest.split(','),dtype=np.float32)
 #         # p = sum(p)
-#     #if space separated values
+#     # #if space separated values
 #     elif " " in sample1_dat_ttest:
 #         # sample1_dat_ttest = sample1_dat_ttest.replace('\n', ',')
 #         p = np.asarray(sample1_dat_ttest.split(' '),dtype=np.float32)
 #         # p = sum(p)
-#     #if line delimited values
+#     # #if line delimited values
 #     else:
 #         sample1_dat_ttest = sample1_dat_ttest.replace('\n', ',')
 #         p = np.asarray(sample1_dat_ttest.split(','),dtype=np.float32)
 #         # p = sum(p)
-#     stdev_1 = np.std(p)
-#     mean_1 = np.mean(p)
-#     n_1 = len(p)
-#     # return 'The p-value is: "{}"'.format(p)
-
+#     # np.random.seed(1)
+#     # N = 20
+#     # X = np.concatenate((np.random.normal(0, 1, 0.3 * N),
+#     #                     np.random.normal(5, 1, 0.7 * N)))[:, np.newaxis]
+#     # X_plot = np.linspace(-5, 10, 1000)[:, np.newaxis]
+#     # bins = 10
+#     # X = eval('[' + sample1_dat_ttest + ']')
+#     # sample1_dat_ttest = sample1_dat_ttest.split(',')
 #     # p = np.asarray(p)
-#     # X = p.reshape(-1, 1)
-#     # kde = KernelDensity(kernel='gaussian', bandwidth=0.75).fit(p)
-#     # log_dens = kde.score_samples(X)
-#     # return log_dens
-#     # return p
+    
+#     # np.random.seed(1)
+#     # N = 20
+#     # X = np.concatenate((np.random.normal(0, 1, 0.3 * N),
+#     #                     np.random.normal(5, 1, 0.7 * N)))[:, np.newaxis]
+#     # X_plot = np.linspace(-5, 10, 1000)[:, np.newaxis]
+#     # bins = 10
 
-#     return mean_1
 
-# #SAMPLE 2 Stats
-# @app.callback(dash.dependencies.Output('sample2_dat_summ', 'children'),
-#               [dash.dependencies.Input('sample2_dat_ttest', 'value')
-#               ])
-# def sample2_dat_summ(sample2_dat_ttest):
-#     #if comma separated values
-#     if "," in sample1_dat_ttest:
-#         p = np.asarray(sample2_dat_ttest.split(','),dtype=np.float32)
-#         # p = sum(p)
-#     #if space separated values
-#     elif " " in sample1_dat_ttest:
-#         # sample1_dat_ttest = sample2_dat_ttest.replace('\n', ',')
-#         p = np.asarray(sample2_dat_ttest.split(' '),dtype=np.float32)
-#         # p = sum(p)
-#     #if line delimited values
-#     else:
-#         sample1_dat_ttest = sample2_dat_ttest.replace('\n', ',')
-#         p = np.asarray(sample2_dat_ttest.split(','),dtype=np.float32)
-#         # p = sum(p)
-#     stdev_2 = np.std(p)
-#     mean_2 = np.mean(p)
-#     n_2 = len(p)
-#     # return 'The p-value is: "{}"'.format(p)
-#     return stdev_2, mean_2, n_2
+#     # kde = KernelDensity(kernel='gaussian', bandwidth=0.75).fit(X)
+#     # log_dens = kde.score_samples(X_plot)
+
+#     return {
+#         # go.Figure(
+#         'data':[
+#             # go.Scatter(x=X, y=np.exp(log_dens), 
+#             #                 mode='lines', fill='tozeroy',
+#             #                 line=dict(color='#AAAAFF', width=2)),
+#             # {'x':[X],
+#             # 'y':[np.exp(log_dens)], 
+#             # 'mode':'lines', 
+#             # 'fill':'tozeroy',
+#             # 'line':dict(color='#AAAAFF', width=2)},
+
+#             trace0 = go.Scatter(
+#                 x = random_x,
+#                 y = random_y0,
+#                 mode = 'lines',
+#                 name = 'lines'
+#             )
+
+#             go.Bar(
+#                 x=[1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003,
+#                    2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012],
+#                 y=[219, 146, 112, 127, 124, 180, 236, 207, 236, 263,
+#                    350, 430, 474, 526, 488, 537, 500, 439],
+#                 name='Rest of world',
+#                 marker=go.Marker(
+#                     color='rgb(55, 83, 109)'
+#                 )
+#             )
+#             ]
+#             # 'data': [
+#             #     {'x': [1,2], 
+#             #     'y': [sample1_prop,sample2_prop], 
+#             #     'error_y':{
+#             #         "array":[err1,err2]},
+#             #     'type': 'bar', 'name': 'SF2'},
+#             #     ],
+#             #     'layout': {
+#             #         'title': 'Dash Data Visualization'
+#             #     }
+#         }
+
 
 
 #PAGE 4 - 2 SAMPLE SURVIVAL TIMES
@@ -570,42 +479,286 @@ page_4_layout = html.Div([
     html.H1('Survival Times'),
     dcc.Link('Go back to home', href='/'),
     html.Br(),
+    # INPUT BOX 1 - Sample 1
     dcc.Textarea(
         id='sample1_dat_survival',
         placeholder="Paste Samples Here",
-            value="54,231,554,322,553,111",
+            value="1,1,2,3,4,4,5,5,8,8,8,8,11,11,12,12,15,17,22,23",
         style={'width': '20%',
         'height':'50%'},
     ),
     html.Br(),
+    # INPUT BOX 2 - Sample 2
     dcc.Textarea(
         id='sample2_dat_survival',
         placeholder='Paste Samples Here',
-        value='54,231,554,322,553,111',
+        value='6,6,7,9,10,11,13,15,16,19,20,22,23,32,6,10,17,19,24,25,25,28,28,32,33,34,35,39',
         style={'width': '20%'}
     ),
     html.Br(),
-    html.Div(id='sample1_dat_survival_summ'),
-    html.Br(),
-    html.Br(),
+    # INPUT BOX 3 - Confidence Level
+    html.Label('Confidence Level:'),
+    dcc.Input(
+        id='survival_confidence_level',
+        placeholder='0.95',
+        type='text',
+        value='0.95'
+    ),
+
+    html.Div(id='survival_output'),
     html.Br(),
         html.Div([
-            dcc.Graph(id='ttest-graph')
+            dcc.Graph(id='survival-graph')
 
         ]),
-    html.Br(),
-    html.Br(),
-    # dcc.Link('Go to Page 1', href='/sample_size_calculator'),
-    html.Br(),
-    dcc.Link('Go back to home', href='/'),
 
-    ],style={'columnCount': 2})
+    ])
 
+#RESULT- SURVIVAL 
+@app.callback(
+    dash.dependencies.Output('survival_output','children'),
+            [dash.dependencies.Input('sample1_dat_survival','value'),
+            dash.dependencies.Input('sample2_dat_survival','value'),
+            dash.dependencies.Input('survival_confidence_level','value')
+            ])
+def update_survival(sample1_dat_survival,sample2_dat_survival,
+                    survival_confidence_level):
+    #sample 1 input
+    #if comma separated values
+    if "," in sample1_dat_survival:
+        p1 = np.asarray(sample1_dat_survival.split(','),dtype=np.float32)
+    # #if space separated values
+    elif " " in sample1_dat_survival:
+        # sample1_dat_ttest = sample1_dat_ttest.replace('\n', ',')
+        p1 = np.asarray(sample1_dat_survival.split(' '),dtype=np.float32)
+    # #if line delimited values
+    else:
+        sample1_dat_survival = sample1_dat_survival.replace('\n', ',')
+        p1 = np.asarray(sample1_dat_survival.split(','),dtype=np.float32)
+    #sample 2 input
+    #if comma separated values
+    if "," in sample2_dat_survival:
+        p2 = np.asarray(sample2_dat_survival.split(','),dtype=np.float32)
+    # #if space separated values
+    elif " " in sample2_dat_survival:
+        # sample1_dat_ttest = sample1_dat_ttest.replace('\n', ',')
+        p2 = np.asarray(sample2_dat_survival.split(' '),dtype=np.float32)
+    # #if line delimited values
+    else:
+        sample2_dat_survival = sample2_dat_survival.replace('\n', ',')
+        p2 = np.asarray(sample2_dat_survival.split(','),dtype=np.float32)
+    
+    x = logrank_test(p1, p2, alpha=float(survival_confidence_level))
+
+    p_result = float(x.p_value)
+
+    return 'The p-value is: "{}"'.format(p_result)
+    # return p2
+
+#LINE GRAPH - SURVIVAL
+@app.callback(dash.dependencies.Output('survival-graph','figure'),
+            [dash.dependencies.Input('sample1_dat_survival','value'),
+            dash.dependencies.Input('sample2_dat_survival','value'),
+            dash.dependencies.Input('survival_confidence_level','value')
+            ])
+def update_survivalgraph(sample1_dat_survival,sample2_dat_survival,
+                        survival_confidence_level):
+    #sample 1 input
+    #if comma separated values
+    if "," in sample1_dat_survival:
+        p1 = np.asarray(sample1_dat_survival.split(','),dtype=np.float32)
+    # #if space separated values
+    elif " " in sample1_dat_survival:
+        # sample1_dat_ttest = sample1_dat_ttest.replace('\n', ',')
+        p1 = np.asarray(sample1_dat_survival.split(' '),dtype=np.float32)
+    # #if line delimited values
+    else:
+        sample1_dat_survival = sample1_dat_survival.replace('\n', ',')
+        p1 = np.asarray(sample1_dat_survival.split(','),dtype=np.float32)
+    #sample 2 input
+    #if comma separated values
+    if "," in sample2_dat_survival:
+        p2 = np.asarray(sample2_dat_survival.split(','),dtype=np.float32)
+    # #if space separated values
+    elif " " in sample2_dat_survival:
+        # sample1_dat_ttest = sample1_dat_ttest.replace('\n', ',')
+        p2 = np.asarray(sample2_dat_survival.split(' '),dtype=np.float32)
+    # #if line delimited values
+    else:
+        sample2_dat_survival = sample2_dat_survival.replace('\n', ',')
+        p2 = np.asarray(sample2_dat_survival.split(','),dtype=np.float32)
+
+    y1 = []
+    for i in np.sort(p1):
+        x = 1 - np.compress((i > p1), p1).size/len(p1)
+        y1.append(x)
+
+    x1 = np.arange(0,len(p1),1).tolist()
+
+    y2 = []
+    for i in np.sort(p2):
+        x = 1 - np.compress((i > p2), p2).size/len(p2)
+        y2.append(x)
+
+    x2 = np.arange(0,len(p2),1).tolist()
+
+    trace1 = go.Scatter(
+                x=x1,
+                y=y1,
+                mode = 'lines',
+                name = 'Sample 1'
+            )
+    trace2 = go.Scatter(
+                x=x2,
+                y=y2,
+                mode = 'lines',
+                name = 'Sample 2'
+            )
+
+    return {
+       
+        'data':[trace1,trace2]
+       
+    }
 
 #PAGE 5 - Count Data
 ##############################################################################
 ##############################################################################
+#Text
+markdown_text_poisson = '''
+    A Poisson test is...
+'''
 
+page_5_layout = html.Div([
+    html.H1('Count Data'),
+    dcc.Markdown(children=markdown_text_poisson),
+    dcc.Link('Go back to home', href='/'),
+    html.Br(),
+
+        html.Div(
+        [
+            # INPUT BOX 1 - Sample 1 # of Events
+            html.Label('Sample 1: # of Events:'),
+            dcc.Input(
+                id='sample1_events',
+                placeholder='20',
+                type='text',
+                value='20'
+            ),
+            # html.Div(id='sample1_successes_out'), #WIP
+
+            # INPUT BOX 2 - Sample 1 # of Days
+            html.Label('Sample 1: # of Days:'),
+            dcc.Input(
+                id='sample1_days',
+                placeholder='1',
+                type='text',
+                value='1'
+            ),
+            # html.Div(id='sample1_trials_out'), #WIP
+
+            # INPUT BOX 3 - Sample 2 # of Events
+            html.Label('Sample 2: # of Events:'),
+            dcc.Input(
+                id='sample2_events',
+                placeholder='25',
+                type='text',
+                value='25'
+            ),
+            # html.Div(id='sample2_successes_out'),
+
+            # INPUT BOX 4 - Sample 2 # of Days
+            html.Label('Sample 2: # of Days:'),
+            dcc.Input(
+                id='sample2_days',
+                placeholder='1',
+                type='text',
+                value='1'
+            ),
+
+            # INPUT BOX 4 - Confidence Level
+            html.Label('Confidence Level:'),
+            dcc.Input(
+                id='poisson_confidence_level',
+                placeholder='0.95',
+                type='text',
+                value='0.95'
+            ),
+            
+            html.Label('Result:'),
+            html.Div(id='poisson_output'),
+        ]),
+        html.Br(),
+        html.Br(),
+        html.Br(),
+        html.Br(),
+        html.Br(),
+        html.Br(),
+    html.Div(
+        [
+            dcc.Graph(id='poisson-graph')
+
+        ]),
+
+    html.Br(),
+    html.Br(),
+    html.Br(),
+
+],style={'columnCount': 2})
+
+#RESULT- POISSON 
+@app.callback(
+    dash.dependencies.Output('poisson_output','children'),
+            [dash.dependencies.Input('sample1_events','value'),
+            dash.dependencies.Input('sample1_days','value'),
+            dash.dependencies.Input('sample2_events','value'),
+            dash.dependencies.Input('sample2_days','value')
+            ])
+def update_poisson(sample1_events,sample1_days,
+                        sample2_events,sample2_days):
+    
+    p_result = binom_test(np.array([float(sample1_events)/float(sample1_days),
+    float(sample2_events)/float(sample2_days)]), 
+    float(sample1_events)+float(sample1_events))
+
+    # return 'The CVaR is: "{}"'.format(CVaR)
+    # return p_result
+    return 'The p-value is: "{}"'.format(p_result)
+
+#BAR GRAPH - POISSON
+@app.callback(dash.dependencies.Output('poisson-graph','figure'),
+            [dash.dependencies.Input('sample1_events','value'),
+            dash.dependencies.Input('sample1_days','value'),
+            dash.dependencies.Input('sample2_events','value'),
+            dash.dependencies.Input('sample2_days','value'),
+            dash.dependencies.Input('poisson_confidence_level','value')
+            ])
+def update_poissongraph(sample1_events,sample1_days,
+                        sample2_events,sample2_days,
+                        poisson_confidence_level):
+    #calculate sample proportions
+    
+    
+    #calculate confidence intervals
+
+    lower, upper = poisson.interval(float(poisson_confidence_level),
+    [float(sample1_events),float(sample2_events)])
+
+    err1 = (upper[0] - lower[0])/2
+    err2 = (upper[1] - lower[1])/2
+
+    return {
+            'data': [
+                {'x': [1,2], 
+                'y': [sample1_events,sample2_events], 
+                'error_y':{
+                    "array":[err1,err2]},
+                'type': 'bar', 'name': 'SF2'},
+                ],
+                'layout': {
+                    'title': 'Poisson Confidence Interval'
+                }
+            }
 
 #PAGE 6 - Value at Risk
 ##############################################################################
@@ -618,6 +771,7 @@ markdown_text_chi_squared = '''
 page_6_layout = html.Div([
     html.H1('Credit Value at Risk'),
     dcc.Markdown(children=markdown_text_chi_squared),
+    dcc.Link('Go back to home', href='/'),
     html.Br(),
 
         html.Div(
@@ -710,9 +864,9 @@ page_6_layout = html.Div([
     html.Br(),
     dcc.Link('Go back to home', href='/'),
 
-],style={'columnCount': 2})
+])
 
-#BAR GRAPH - CHISQ - SAMPLE PROPORTIONS
+#BAR GRAPH - CVaR
 @app.callback(
     dash.dependencies.Output('cvar_output','children'),
             [dash.dependencies.Input('s0','value'),
@@ -742,8 +896,8 @@ def update_cvartext(s0,riskless_short_rate,
     #calculate CVaR
     CVaR = np.exp(-r * T) * 1/I * np.sum(L*D*ST)
 
-    # return 'The CVaR is: "{}"'.format(CVaR)
-    return CVaR
+    return 'The CVaR is: "{}"'.format(CVaR)
+    # return CVaR
 
 # INDEX
 #############################################################################
@@ -761,7 +915,7 @@ def display_page(pathname):
         return page_3_layout
     elif pathname == '/2_sample_survival':
         return page_4_layout
-    elif pathname == '/2_sample_survival':
+    elif pathname == '/count_data':
         return page_5_layout
     elif pathname == '/cvar':
         return page_6_layout
