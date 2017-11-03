@@ -41,6 +41,38 @@ app = dash.Dash()
 # the exception.
 app.config.supress_callback_exceptions = True
 
+# UP-FRONT FUNCTION DEFINITIONS
+## Text Parser
+def text_parse(blob1,blob2):
+    '''
+    Takes a blob of values input into 'TextArea' box widget and returns a numpy array
+    Text blobs can be comma, space or line delimited
+    '''
+    #blob 1 input
+    ##if comma separated values
+    if "," in blob1:
+            p1 = np.asarray(blob1.split(','),dtype=np.float32)
+    # #if space separated values
+    elif " " in blob1:
+        p1 = np.asarray(blob1.split(' '),dtype=np.float32)
+    # #if line delimited values
+    else:
+        blob1 = blob1.replace('\n', ',')
+        p1 = np.asarray(blob1.split(','),dtype=np.float32)
+    #blob 2 input
+    #if comma separated values
+    if "," in blob2:
+        p2 = np.asarray(blob2.split(','),dtype=np.float32)
+    # #if space separated values
+    elif " " in blob2:
+        p2 = np.asarray(blob2.split(' '),dtype=np.float32)
+    # #if line delimited values
+    else:
+        blob2 = blob2.replace('\n', ',')
+        p2 = np.asarray(blob2.split(','),dtype=np.float32)
+
+    return p1,p2
+
 # HOME
 ##############################################################################
 app.layout = html.Div([
@@ -184,7 +216,7 @@ def sample_size_content(baseline_input, effect_size_input,significance_level_inp
     (1-((float(baseline_input)+float(effect_size_input)) /2))
     n = s * ((zp + z)**2) / (d**2)
     n = int(round(n[0]))
-    # value = "lol noob"
+
     return 'The Sample Size Is: "{}"'.format(n)
 
 
@@ -372,38 +404,12 @@ page_3_layout = html.Div([
               dash.dependencies.Input('sample2_dat_ttest', 'value')
               ])
 def sample1_dat_summ(sample1_dat_ttest,sample2_dat_ttest):
-    #sample 1 input
-    #if comma separated values
-    if "," in sample1_dat_ttest:
-        p1 = np.asarray(sample1_dat_ttest.split(','),dtype=np.float32)
-    # #if space separated values
-    elif " " in sample1_dat_ttest:
-        # sample1_dat_ttest = sample1_dat_ttest.replace('\n', ',')
-        p1 = np.asarray(sample1_dat_ttest.split(' '),dtype=np.float32)
-    # #if line delimited values
-    else:
-        sample1_dat_ttest = sample1_dat_ttest.replace('\n', ',')
-        p1 = np.asarray(sample1_dat_ttest.split(','),dtype=np.float32)
-    #sample 2 input
-    #if comma separated values
-    if "," in sample2_dat_ttest:
-        p2 = np.asarray(sample2_dat_ttest.split(','),dtype=np.float32)
-    # #if space separated values
-    elif " " in sample2_dat_ttest:
-        # sample1_dat_ttest = sample1_dat_ttest.replace('\n', ',')
-        p2 = np.asarray(sample2_dat_ttest.split(' '),dtype=np.float32)
-    # #if line delimited values
-    else:
-        sample2_dat_ttest = sample2_dat_ttest.replace('\n', ',')
-        p2 = np.asarray(sample2_dat_ttest.split(','),dtype=np.float32)
-
+    p1, p2 = text_parse(sample1_dat_ttest,sample2_dat_ttest)
     t, p = ttest_ind(p1, p2, equal_var=False)
     # return p
     return 'The p-value is: "{}"'.format(p)
 
-
-
-
+# WIP - CREATE KERNEL DENSITY PLOTS
 # KERNEL DENSITY - TTEST
 # @app.callback(dash.dependencies.Output('ttest-graph','figure'),
 #             [dash.dependencies.Input('sample1_dat_ttest','value')])
@@ -541,37 +547,15 @@ page_4_layout = html.Div([
             ])
 def update_survival(sample1_dat_survival,sample2_dat_survival,
                     survival_confidence_level):
-    #sample 1 input
-    #if comma separated values
-    if "," in sample1_dat_survival:
-        p1 = np.asarray(sample1_dat_survival.split(','),dtype=np.float32)
-    # #if space separated values
-    elif " " in sample1_dat_survival:
-        # sample1_dat_ttest = sample1_dat_ttest.replace('\n', ',')
-        p1 = np.asarray(sample1_dat_survival.split(' '),dtype=np.float32)
-    # #if line delimited values
-    else:
-        sample1_dat_survival = sample1_dat_survival.replace('\n', ',')
-        p1 = np.asarray(sample1_dat_survival.split(','),dtype=np.float32)
-    #sample 2 input
-    #if comma separated values
-    if "," in sample2_dat_survival:
-        p2 = np.asarray(sample2_dat_survival.split(','),dtype=np.float32)
-    # #if space separated values
-    elif " " in sample2_dat_survival:
-        # sample1_dat_ttest = sample1_dat_ttest.replace('\n', ',')
-        p2 = np.asarray(sample2_dat_survival.split(' '),dtype=np.float32)
-    # #if line delimited values
-    else:
-        sample2_dat_survival = sample2_dat_survival.replace('\n', ',')
-        p2 = np.asarray(sample2_dat_survival.split(','),dtype=np.float32)
-    
+
+    p1, p2 = text_parse(sample1_dat_survival,sample2_dat_survival)
+
     x = logrank_test(p1, p2, alpha=float(survival_confidence_level))
 
     p_result = float(x.p_value)
 
     return 'The p-value is: "{}"'.format(p_result)
-    # return p2
+
 
 #LINE GRAPH - SURVIVAL
 @app.callback(dash.dependencies.Output('survival-graph','figure'),
@@ -581,30 +565,8 @@ def update_survival(sample1_dat_survival,sample2_dat_survival,
             ])
 def update_survivalgraph(sample1_dat_survival,sample2_dat_survival,
                         survival_confidence_level):
-    #sample 1 input
-    #if comma separated values
-    if "," in sample1_dat_survival:
-        p1 = np.asarray(sample1_dat_survival.split(','),dtype=np.float32)
-    # #if space separated values
-    elif " " in sample1_dat_survival:
-        # sample1_dat_ttest = sample1_dat_ttest.replace('\n', ',')
-        p1 = np.asarray(sample1_dat_survival.split(' '),dtype=np.float32)
-    # #if line delimited values
-    else:
-        sample1_dat_survival = sample1_dat_survival.replace('\n', ',')
-        p1 = np.asarray(sample1_dat_survival.split(','),dtype=np.float32)
-    #sample 2 input
-    #if comma separated values
-    if "," in sample2_dat_survival:
-        p2 = np.asarray(sample2_dat_survival.split(','),dtype=np.float32)
-    # #if space separated values
-    elif " " in sample2_dat_survival:
-        # sample1_dat_ttest = sample1_dat_ttest.replace('\n', ',')
-        p2 = np.asarray(sample2_dat_survival.split(' '),dtype=np.float32)
-    # #if line delimited values
-    else:
-        sample2_dat_survival = sample2_dat_survival.replace('\n', ',')
-        p2 = np.asarray(sample2_dat_survival.split(','),dtype=np.float32)
+
+    p1, p2 = text_parse(sample1_dat_survival,sample2_dat_survival)
 
     y1 = []
     for i in np.sort(p1):
@@ -635,7 +597,12 @@ def update_survivalgraph(sample1_dat_survival,sample2_dat_survival,
 
     return {
        
-        'data':[trace1,trace2]
+        'data':[trace1,trace2],
+        'layout': {
+                'title': 'Survival Function Plot',
+                'xaxis' : {'title': 'Time'},
+                'yaxis' : {'title': 'Survival Rate'},
+            }
        
     }
 
@@ -705,11 +672,7 @@ page_5_layout = html.Div([
             html.Div(id='poisson_output'),
         ]),
         html.Br(),
-        html.Br(),
-        html.Br(),
-        html.Br(),
-        html.Br(),
-        html.Br(),
+
     html.Div(
         [
             dcc.Graph(id='poisson-graph')
@@ -1114,33 +1077,7 @@ page_8_layout = html.Div([
             dash.dependencies.Input('pe_quantities','value'),
             ])
 def update_pe(pe_prices,pe_quantities):
-     #sample 1 input
-    #if comma separated values
-    if "," in pe_prices:
-        p1 = np.asarray(pe_prices.split(','),dtype=np.float32)
-    # #if space separated values
-    elif " " in pe_prices:
-        # pe_prices = pe_prices.replace('\n', ',')
-        p1 = np.asarray(pe_prices.split(' '),dtype=np.float32)
-    # #if line delimited values
-    else:
-        pe_prices = pe_prices.replace('\n', ',')
-        p1 = np.asarray(pe_prices.split(','),dtype=np.float32)
-    
-    #sample 2 input
-    #if comma separated values
-    if "," in pe_quantities:
-        p2 = np.asarray(pe_quantities.split(','),dtype=np.float32)
-    # #if space separated values
-    elif " " in pe_quantities:
-        # pe_quantities = pe_quantities.replace('\n', ',')
-        p2 = np.asarray(pe_quantities.split(' '),dtype=np.float32)
-    # #if line delimited values
-    else:
-        pe_quantities = pe_quantities.replace('\n', ',')
-        p2 = np.asarray(pe_quantities.split(','),dtype=np.float32)
-
-    # pd.DataFrame()
+    p1, p2 = text_parse(pe_prices,pe_quantities)
 
     est = sm.OLS(np.log(p2), sm.add_constant(np.log(p1))).fit()
     pe = est.params[1]
@@ -1152,37 +1089,9 @@ def update_pe(pe_prices,pe_quantities):
             [dash.dependencies.Input('pe_prices','value'),
             dash.dependencies.Input('pe_quantities','value'),
             ])
-def update_survivalgraph(pe_prices,pe_quantities):
-    #sample 1 input
-    #if comma separated values
-    if "," in pe_prices:
-        p1 = np.asarray(pe_prices.split(','),dtype=np.float32)
-        # p1 = list(pe_prices)
-    # #if space separated values
-    elif " " in pe_prices:
-        # sample1_dat_ttest = sample1_dat_ttest.replace('\n', ',')
-        p1 = np.asarray(pe_prices.split(' '),dtype=np.float32)
-        # p1 = list(pe_prices)
-    # #if line delimited values
-    else:
-        pe_prices = pe_prices.replace('\n', ',')
-        # p1 = list(pe_prices)
-        p1 = np.asarray(pe_prices.split(','),dtype=np.float32)
-    #sample 2 input
-    #if comma separated values
-    if "," in pe_quantities:
-        # p2 = list(pe_quantities)
-        p2 = np.asarray(pe_quantities.split(','),dtype=np.float32)
-    # #if space separated values
-    elif " " in pe_quantities:
-        pe_quantities = pe_quantities.replace('\n', ',')
-        # p2 = list(pe_quantities)
-        p2 = np.asarray(pe_quantities.split(' '),dtype=np.float32)
-    # #if line delimited values
-    else:
-        pe_quantities = pe_quantities.replace('\n', ',')
-        # p2 = list(pe_quantities)
-        p2 = np.asarray(pe_quantities.split(','),dtype=np.float32)
+def update_pegraph(pe_prices,pe_quantities):
+
+    p1, p2 = text_parse(pe_prices,pe_quantities)
 
     df = pd.DataFrame(
     {'quantity': p2,
@@ -1214,7 +1123,6 @@ def update_survivalgraph(pe_prices,pe_quantities):
         }
        
     }
-
 
 #PAGE 9 - PEARSON CORRELATION
 ##############################################################################
@@ -1275,31 +1183,7 @@ page_9_layout = html.Div([
             dash.dependencies.Input('sample2_dat','value'),
             ])
 def update_correl(sample1_dat,sample2_dat):
-     #sample 1 input
-    #if comma separated values
-    if "," in sample1_dat:
-        p1 = np.asarray(sample1_dat.split(','),dtype=np.float32)
-    # #if space separated values
-    elif " " in sample1_dat:
-        # pe_prices = pe_prices.replace('\n', ',')
-        p1 = np.asarray(sample1_dat.split(' '),dtype=np.float32)
-    # #if line delimited values
-    else:
-        sample1_dat = sample1_dat.replace('\n', ',')
-        p1 = np.asarray(sample1_dat.split(','),dtype=np.float32)
-    
-    #sample 2 input
-    #if comma separated values
-    if "," in sample2_dat:
-        p2 = np.asarray(sample2_dat.split(','),dtype=np.float32)
-    # #if space separated values
-    elif " " in sample2_dat:
-        # pe_quantities = pe_quantities.replace('\n', ',')
-        p2 = np.asarray(sample2_dat.split(' '),dtype=np.float32)
-    # #if line delimited values
-    else:
-        sample2_dat = sample2_dat.replace('\n', ',')
-        p2 = np.asarray(sample2_dat.split(','),dtype=np.float32)
+    p1, p2 = text_parse(sample1_dat,sample2_dat)
 
     pd.DataFrame()
     df = pd.DataFrame(
@@ -1316,31 +1200,7 @@ def update_correl(sample1_dat,sample2_dat):
             dash.dependencies.Input('sample2_dat','value'),
             ])
 def update_correlgraph(sample1_dat,sample2_dat):
-    #sample 1 input
-    #if comma separated values
-    if "," in sample1_dat:
-        p1 = np.asarray(sample1_dat.split(','),dtype=np.float32)
-    # #if space separated values
-    elif " " in sample1_dat:
-        # pe_prices = pe_prices.replace('\n', ',')
-        p1 = np.asarray(sample1_dat.split(' '),dtype=np.float32)
-    # #if line delimited values
-    else:
-        sample1_dat = sample1_dat.replace('\n', ',')
-        p1 = np.asarray(sample1_dat.split(','),dtype=np.float32)
-    
-    #sample 2 input
-    #if comma separated values
-    if "," in sample2_dat:
-        p2 = np.asarray(sample2_dat.split(','),dtype=np.float32)
-    # #if space separated values
-    elif " " in sample2_dat:
-        # pe_quantities = pe_quantities.replace('\n', ',')
-        p2 = np.asarray(sample2_dat.split(' '),dtype=np.float32)
-    # #if line delimited values
-    else:
-        sample2_dat = sample2_dat.replace('\n', ',')
-        p2 = np.asarray(sample2_dat.split(','),dtype=np.float32)
+    p1, p2 = text_parse(sample1_dat,sample2_dat)
 
     df = pd.DataFrame(
     {'sample1': p2,
