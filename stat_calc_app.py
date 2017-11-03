@@ -24,6 +24,11 @@ from scipy.stats import beta
 from scipy.stats import poisson
 # survival
 from lifelines.statistics import logrank_test
+# price elasticity
+import statsmodels.api as sm
+# r-squared
+# from sklearn.metrics import pearson_correl_output
+from sklearn.metrics import r2_score
 
 print(dcc.__version__) # 0.6.0 or above is required
 
@@ -49,11 +54,12 @@ markdown_intro = '''
     '''
 
 index_page = html.Div([
-    html.H1('Statistical Tools:'),
+    html.H1('Calculators'),
     
     dcc.Markdown(children=markdown_intro),
-
     html.Br(),
+
+    html.H2('Statistical:'),
     dcc.Link('Sample Size Calculator', href='/sample_size_calculator'),
     html.Br(),
     dcc.Link('Chi Squared Test', href='/chi_squared_test'),
@@ -64,7 +70,15 @@ index_page = html.Div([
     html.Br(),
     dcc.Link('Count Data',href='/count_data'),
     html.Br(),
-    dcc.Link('Credit Value at Risk',href='/cvar')
+    dcc.Link('Pearson Correlation',href='/pearson_correl'),
+    html.Br(),
+    html.H2('Financial:'),
+    dcc.Link('Credit Value at Risk',href='/cvar'),
+    html.Br(),
+    html.H2('Economic:'),
+    dcc.Link('Price Elasticity of Demand - Values',href='/pe'),
+    html.Br(),
+    dcc.Link('Price Elasticity of Demand - Raw Data',href='/pe_raw')
 
 ])
 
@@ -198,7 +212,7 @@ page_2_layout = html.Div([
                 type='text',
                 value='150'
             ),
-            # html.Div(id='sample1_successes_out'), #WIP
+
             html.Br(),
 
             # INPUT BOX 2 - Sample1 Trials
@@ -209,7 +223,7 @@ page_2_layout = html.Div([
                 type='text',
                 value='1000'
             ),
-            # html.Div(id='sample1_trials_out'), #WIP
+
             html.Br(),
 
             # INPUT BOX 3 - Sample2 Successes
@@ -220,7 +234,7 @@ page_2_layout = html.Div([
                 type='text',
                 value='180'
             ),
-            # html.Div(id='sample2_successes_out'),
+
             html.Br(),
 
             # INPUT BOX 4 - Sample2 Trials
@@ -231,7 +245,6 @@ page_2_layout = html.Div([
                 type='text',
                 value='1000'
             ),
-            # html.Div(id='sample2_trials_out'),
             html.Br(),
 
             # INPUT BOX 5 - Confidence Level
@@ -322,6 +335,7 @@ page_3_layout = html.Div([
     html.H1('Two Sample T-Test'),
     dcc.Link('Go back to home', href='/'),
     html.Br(),
+    html.Label('Sample 1 Values:'),
     dcc.Textarea(
         id='sample1_dat_ttest',
         placeholder="Paste Samples Here",
@@ -330,6 +344,7 @@ page_3_layout = html.Div([
         'height':'50%'},
     ),
     html.Br(),
+    html.Label('Sample 2 Values:'),
     dcc.Textarea(
         id='sample2_dat_ttest',
         placeholder='Paste Samples Here',
@@ -343,6 +358,7 @@ page_3_layout = html.Div([
 
     #     ]),
     # html.Br(),
+    html.Label('T Test P-Value:'),
     html.Div(id='ttest_result'),
     html.Br(),
     # dcc.Link('Go to Page 1', href='/sample_size_calculator'),
@@ -480,6 +496,7 @@ page_4_layout = html.Div([
     dcc.Link('Go back to home', href='/'),
     html.Br(),
     # INPUT BOX 1 - Sample 1
+    html.Label('Sample 1:'),
     dcc.Textarea(
         id='sample1_dat_survival',
         placeholder="Paste Samples Here",
@@ -489,6 +506,7 @@ page_4_layout = html.Div([
     ),
     html.Br(),
     # INPUT BOX 2 - Sample 2
+    html.Label('Sample 2:'),
     dcc.Textarea(
         id='sample2_dat_survival',
         placeholder='Paste Samples Here',
@@ -504,7 +522,7 @@ page_4_layout = html.Div([
         type='text',
         value='0.95'
     ),
-
+    html.Label('Log Rank P-Value:'),
     html.Div(id='survival_output'),
     html.Br(),
         html.Div([
@@ -655,7 +673,6 @@ page_5_layout = html.Div([
                 type='text',
                 value='1'
             ),
-            # html.Div(id='sample1_trials_out'), #WIP
 
             # INPUT BOX 3 - Sample 2 # of Events
             html.Label('Sample 2: # of Events:'),
@@ -665,7 +682,6 @@ page_5_layout = html.Div([
                 type='text',
                 value='25'
             ),
-            # html.Div(id='sample2_successes_out'),
 
             # INPUT BOX 4 - Sample 2 # of Days
             html.Label('Sample 2: # of Days:'),
@@ -685,7 +701,7 @@ page_5_layout = html.Div([
                 value='0.95'
             ),
             
-            html.Label('Result:'),
+            html.Label('Poisson P-Value:'),
             html.Div(id='poisson_output'),
         ]),
         html.Br(),
@@ -736,11 +752,8 @@ def update_poisson(sample1_events,sample1_days,
 def update_poissongraph(sample1_events,sample1_days,
                         sample2_events,sample2_days,
                         poisson_confidence_level):
-    #calculate sample proportions
-    
     
     #calculate confidence intervals
-
     lower, upper = poisson.interval(float(poisson_confidence_level),
     [float(sample1_events),float(sample2_events)])
 
@@ -780,11 +793,10 @@ page_6_layout = html.Div([
             html.Label('Asset Value at Time 0:'),
             dcc.Input(
                 id='s0',
-                placeholder='100',
+                placeholder='1000',
                 type='text',
-                value='100'
+                value='1000'
             ),
-            # html.Div(id='sample1_successes_out'), #WIP
 
             # INPUT BOX 2 - Constant riskless short rate
             html.Label('Constant riskless short rate:'),
@@ -794,7 +806,6 @@ page_6_layout = html.Div([
                 type='text',
                 value='0.05'
             ),
-            # html.Div(id='sample1_trials_out'), #WIP
 
             # INPUT BOX 3 - Constant volatility
             html.Label('Constant volatility'),
@@ -804,7 +815,6 @@ page_6_layout = html.Div([
                 type='text',
                 value='0.25'
             ),
-            # html.Div(id='sample2_successes_out'),
 
             # INPUT BOX 4 - Random Draw Size
             html.Label('Number of Random Draws:'),
@@ -814,7 +824,6 @@ page_6_layout = html.Div([
                 type='text',
                 value='100000'
             ),
-            # html.Div(id='sample2_trials_out'),
 
             # INPUT BOX 5 - Number of Years
             html.Label('Time Horizon:'),
@@ -829,40 +838,31 @@ page_6_layout = html.Div([
             html.Label('Loss %:'),
             dcc.Input(
                 id='loss_pct',
-                placeholder='0.5',
+                placeholder='0.05',
                 type='text',
-                value='0.5'
+                value='0.05'
             ),
 
             # INPUT BOX 7 - Default Probability
             html.Label('Default Probability:'),
             dcc.Input(
                 id='default_prob',
-                placeholder='0.01',
+                placeholder='0.05',
                 type='text',
-                value='0.01'
+                value='0.05'
             ),
 
             html.Label('Result VaR:'),
             html.Div(id='cvar_output'),
         ]),
         html.Br(),
-        html.Br(),
-        html.Br(),
-        html.Br(),
-        html.Br(),
-        html.Br(),
     html.Div(
         [
-            # dcc.Graph(id='chisq-graph')
+            dcc.Graph(id='cvar-graph')
 
         ]),
 
     html.Br(),
-    html.Br(),
-    dcc.Link('Go to Page 1', href='/sample_size_calculator'),
-    html.Br(),
-    dcc.Link('Go back to home', href='/'),
 
 ])
 
@@ -899,6 +899,470 @@ def update_cvartext(s0,riskless_short_rate,
     return 'The CVaR is: "{}"'.format(CVaR)
     # return CVaR
 
+#WIP
+#HEATMAP- CVAR
+@app.callback(
+    dash.dependencies.Output('cvar-graph','figure'),
+            [dash.dependencies.Input('s0','value'),
+            dash.dependencies.Input('riskless_short_rate','value'),
+            dash.dependencies.Input('constant_volatility','value'),
+            dash.dependencies.Input('random_iter','value'),
+            dash.dependencies.Input('time_horizon','value'),
+            dash.dependencies.Input('loss_pct','value'),
+            dash.dependencies.Input('default_prob','value')
+            ])
+def update_cvargraph(s0,riskless_short_rate,
+                        constant_volatility,random_iter,
+                        time_horizon,loss_pct,default_prob):
+    s0 = float(s0)
+    r = float(riskless_short_rate)
+    sigma = float(constant_volatility)
+    T = int(time_horizon)
+    I = int(random_iter)
+    #calculate 
+    ST = s0 * np.exp((r-0.5*sigma**2)*T + sigma * np.sqrt(T) * npr.standard_normal(I))
+    L = float(loss_pct)
+    p = float(default_prob)
+    #Poisson dfault scenarios
+    D = npr.poisson(p*T,I)
+    D = np.where(D>1,1,D)
+
+    loss_rates = np.arange(0,1.05,0.05) #L
+    default_rates = np.arange(0,1.05,0.05) #p
+    cvar_df = pd.DataFrame(index=loss_rates,columns=default_rates)
+
+    for col in cvar_df:
+        for idx, row in cvar_df.iterrows():
+            L = idx
+            p = col
+            #using Poisson distribution to create default scenarios
+            D = npr.poisson(p*T,I)
+            D = np.where(D>1,1,D)
+            CVaR = np.exp(-r * T) * 1/I * np.sum(L*D*ST)
+            cvar_df.set_value(idx,col,CVaR)
+
+# WIP
+
+    return {
+        'data': [{
+            'z': cvar_df.values.tolist(),
+            'x': cvar_df.index.tolist(),
+            'y': cvar_df.columns.tolist(),
+             
+            # 'text': cvar_df.values.tolist()
+            # , 
+            # 'customdata':cvar_df.values.tolist()
+            # ,
+            'type': 'heatmap', 'name': 'SF2'},
+            ],
+            'layout': {
+                'title': 'CVaR Sensitivity',
+                'xaxis' : {'title': 'Default Probability'},
+                'yaxis' : {'title': 'Loss %'},
+            }
+        }
+
+#PAGE 7 - PRICE ELASTICITY - VALUES
+##############################################################################
+##############################################################################
+#Text
+markdown_text_chi_squared = '''
+    Price Elasticity of Demand is...
+'''
+
+page_7_layout = html.Div([
+    html.H1('Price Elasticity of Demand - Values'),
+    dcc.Markdown(children=markdown_text_chi_squared),
+    dcc.Link('Go back to home', href='/'),
+    html.Br(),
+
+        html.Div(
+        [
+            # INPUT BOX 1 - Original Quantity
+            html.Label('Original Quantity:'),
+            dcc.Input(
+                id='original_quantity',
+                placeholder='2000',
+                type='text',
+                value='2000'
+            ),
+
+            # INPUT BOX 2 - New Quantity
+            html.Label('New Quantity:'),
+            dcc.Input(
+                id='new_quantity',
+                placeholder='4000',
+                type='text',
+                value='4000'
+            ),
+
+            # INPUT BOX 3 - Original Price
+            html.Label('Original Price:'),
+            dcc.Input(
+                id='original_price',
+                placeholder='1.50',
+                type='text',
+                value='1.50'
+            ),
+
+            # INPUT BOX 4 - New Price
+            html.Label('New Price:'),
+            dcc.Input(
+                id='new_price',
+                placeholder='1.00',
+                type='text',
+                value='1.00'
+            ),
+
+
+            html.Label('Result PE:'),
+            html.Div(id='pe_output'),
+        ]),
+        html.Br(),
+        html.Br(),
+        html.Br(),
+        html.Br(),
+        html.Br(),
+        html.Br(),
+    html.Div(
+        [
+            # dcc.Graph(id='chisq-graph')
+
+        ]),
+
+    html.Br(),
+    html.Br(),
+    dcc.Link('Go back to home', href='/'),
+
+])
+
+#BAR GRAPH - PE
+@app.callback(
+    dash.dependencies.Output('pe_output','children'),
+            [dash.dependencies.Input('original_quantity','value'),
+            dash.dependencies.Input('new_quantity','value'),
+            dash.dependencies.Input('original_price','value'),
+            dash.dependencies.Input('new_price','value'),
+            ])
+def update_pe(original_quantity,new_quantity,
+                        original_price,new_price):
+    
+    pe = ( (float(new_quantity)-float(original_quantity) ) / (float(new_quantity)+float(original_quantity) ) ) /\
+     ( (float(new_price) - float(original_price ) ) / (float(new_price) + float(original_price)))
+
+    # return 'The PE: "{}"'.format(pe)
+    return 'An increase in price by  1% changes the quantity demanded by: "{}"%'.format(pe)
+
+
+#PAGE 8 - PRICE ELASTICITY (RAW DATA)
+##############################################################################
+##############################################################################
+#Text
+markdown_text_chi_squared = '''
+    Price Elasticity of Demand is...
+'''
+
+page_8_layout = html.Div([
+    html.H1('Price Elasticity of Demand - Raw Data'),
+    dcc.Markdown(children=markdown_text_chi_squared),
+    dcc.Link('Go back to home', href='/'),
+    html.Br(),
+
+        html.Div(
+        [
+            # INPUT BOX 1 - Sample 1
+            html.Label('Quantities:'),
+            dcc.Textarea(
+                id='pe_quantities',
+                placeholder="Paste Samples Here",
+                    value="14.300000190734901,15.1000003814697,15.300000190734901,15.199999809265099,15.800000190734901,14.699999809265099,16.799999237060501,17.600000381469702,19.299999237060501,19.799999237060501,19.200000762939499,20.600000381469702,20.600000381469702,21.100000381469702,21.299999237060501,22.899999618530302,24.5,25.100000381469698,25.200000762939499,26.299999237060501,27.399999618530302,27.399999618530302,28.299999237060501,27.100000381469698,27.0,26.399999618530302,28.5,29.0,30.399999618530302,32.799999237060497,32.700000762939503,33.700000762939503,33.900001525878899,34.0,35.299999237060497,36.400001525878899,37.200000762939503,39.400001525878899,39.599998474121101,40.900001525878899,42.400001525878899,44.099998474121101,46.5,48.200000762939503,48.799999237060497,48.200000762939503,48.799999237060497,49.5,49.799999237060497,52.900001525878899,53.200000762939503,53.900001525878899",
+                style={'width': '20%',
+                'height':'50%'},
+            ),
+            html.Br(),
+            # INPUT BOX 2 - Sample 2
+            html.Label('Prices:'),
+            dcc.Textarea(
+                id='pe_prices',
+                placeholder='Paste Samples Here',
+                value="2.8838200569152797,2.8038499355316202,2.7584900856018102,2.67040991783142,2.3940498828887899,2.5,2.1617600917816202,2.0391499996185298,1.95848000049591,1.7732000350952102,1.77026998996735,1.5852799415588399,1.6556299924850499,1.6111099720001201,1.5548399686813401,1.58095002174377,1.6265399456024199,1.4610799551010099,1.4712599515914899,1.47411000728607,1.35052001476288,1.3061699867248502,1.27751004695892,1.73649001121521,1.4665299654007,1.5130100250244098,1.3514900207519498,1.2755800485611,1.3128800392150901,1.2010999917983998,1.14563000202179,1.0616099834442101,0.98237997293472301,0.96687000989913907,1.0490900278091402,0.97118997573852506,1.0529199838638299,0.99735999107360795,1.0574799776077299,1.1056499481201201,1.0321300029754601,0.96696001291274991,0.940129995346069,0.95502001047134411,0.94533997774124101,0.93307000398635898,0.97259002923965499,0.98754000663757291,0.97913998365402188,0.97118997573852506,0.94599002599716198,0.94862002134323087",
+                style={'width': '20%',
+                'height':'50%'},
+            ),
+
+            html.Label('Result PE:'),
+            html.Div(id='pe_data_output'),
+        ]),
+        html.Br(),
+ 
+    html.Div(
+        [
+            dcc.Graph(id='pe_raw-graph')
+
+        ]),
+
+    html.Br(),
+    html.Br(),
+    dcc.Link('Go back to home', href='/'),
+
+])
+
+#BAR GRAPH - PE
+@app.callback(
+        dash.dependencies.Output('pe_data_output','children'),
+            [dash.dependencies.Input('pe_prices','value'),
+            dash.dependencies.Input('pe_quantities','value'),
+            ])
+def update_pe(pe_prices,pe_quantities):
+     #sample 1 input
+    #if comma separated values
+    if "," in pe_prices:
+        p1 = np.asarray(pe_prices.split(','),dtype=np.float32)
+    # #if space separated values
+    elif " " in pe_prices:
+        # pe_prices = pe_prices.replace('\n', ',')
+        p1 = np.asarray(pe_prices.split(' '),dtype=np.float32)
+    # #if line delimited values
+    else:
+        pe_prices = pe_prices.replace('\n', ',')
+        p1 = np.asarray(pe_prices.split(','),dtype=np.float32)
+    
+    #sample 2 input
+    #if comma separated values
+    if "," in pe_quantities:
+        p2 = np.asarray(pe_quantities.split(','),dtype=np.float32)
+    # #if space separated values
+    elif " " in pe_quantities:
+        # pe_quantities = pe_quantities.replace('\n', ',')
+        p2 = np.asarray(pe_quantities.split(' '),dtype=np.float32)
+    # #if line delimited values
+    else:
+        pe_quantities = pe_quantities.replace('\n', ',')
+        p2 = np.asarray(pe_quantities.split(','),dtype=np.float32)
+
+    # pd.DataFrame()
+
+    est = sm.OLS(np.log(p2), sm.add_constant(np.log(p1))).fit()
+    pe = est.params[1]
+
+    return 'An increase in price by  1% changes the quantity demanded by: "{}"%'.format(pe)
+
+#LINE GRAPH - PRICE ELASTICITY
+@app.callback(dash.dependencies.Output('pe_raw-graph','figure'),
+            [dash.dependencies.Input('pe_prices','value'),
+            dash.dependencies.Input('pe_quantities','value'),
+            ])
+def update_survivalgraph(pe_prices,pe_quantities):
+    #sample 1 input
+    #if comma separated values
+    if "," in pe_prices:
+        p1 = np.asarray(pe_prices.split(','),dtype=np.float32)
+        # p1 = list(pe_prices)
+    # #if space separated values
+    elif " " in pe_prices:
+        # sample1_dat_ttest = sample1_dat_ttest.replace('\n', ',')
+        p1 = np.asarray(pe_prices.split(' '),dtype=np.float32)
+        # p1 = list(pe_prices)
+    # #if line delimited values
+    else:
+        pe_prices = pe_prices.replace('\n', ',')
+        # p1 = list(pe_prices)
+        p1 = np.asarray(pe_prices.split(','),dtype=np.float32)
+    #sample 2 input
+    #if comma separated values
+    if "," in pe_quantities:
+        # p2 = list(pe_quantities)
+        p2 = np.asarray(pe_quantities.split(','),dtype=np.float32)
+    # #if space separated values
+    elif " " in pe_quantities:
+        pe_quantities = pe_quantities.replace('\n', ',')
+        # p2 = list(pe_quantities)
+        p2 = np.asarray(pe_quantities.split(' '),dtype=np.float32)
+    # #if line delimited values
+    else:
+        pe_quantities = pe_quantities.replace('\n', ',')
+        # p2 = list(pe_quantities)
+        p2 = np.asarray(pe_quantities.split(','),dtype=np.float32)
+
+    df = pd.DataFrame(
+    {'quantity': p2,
+     'price': p1})
+
+    df['demand'] = ""
+    for idx,row in df.iterrows():
+        x = np.sum(df[df['price']>=row['price']]['quantity'])
+        df.set_value(idx,'demand',x)
+
+    DEMAND = df['demand']
+    # QUANT = df['quantity']
+    PRICE = df['price']
+
+    trace1 = go.Scatter(
+                x=DEMAND,
+                y=PRICE,
+                mode = 'lines',
+                name = 'Quantity Demanded'
+            )
+
+    return {
+       
+        'data':[trace1],
+        'layout': {
+            'title': 'Demand as a Function of Price',
+            'xaxis' : {'title': 'Quantity Demand'},
+            'yaxis' : {'title': 'Price'},
+        }
+       
+    }
+
+
+#PAGE 9 - PEARSON CORRELATION
+##############################################################################
+##############################################################################
+#Text
+markdown_text_pearson_correl= '''
+    Pearson's Correlation...
+'''
+
+page_9_layout = html.Div([
+    html.H1('Pearson Correlation'),
+    dcc.Markdown(children=markdown_text_pearson_correl),
+    dcc.Link('Go back to home', href='/'),
+    html.Br(),
+
+        html.Div(
+        [
+            # INPUT BOX 1 - Sample 1
+            html.Label('Sample 1:'),
+            dcc.Textarea(
+                id='sample1_dat',
+                placeholder="Paste Samples Here",
+                    value="14.300000190734901,15.1000003814697,15.300000190734901,15.199999809265099,15.800000190734901,14.699999809265099,16.799999237060501,17.600000381469702,19.299999237060501,19.799999237060501,19.200000762939499,20.600000381469702,20.600000381469702,21.100000381469702,21.299999237060501,22.899999618530302,24.5,25.100000381469698,25.200000762939499,26.299999237060501,27.399999618530302,27.399999618530302,28.299999237060501,27.100000381469698,27.0,26.399999618530302,28.5,29.0,30.399999618530302,32.799999237060497,32.700000762939503,33.700000762939503,33.900001525878899,34.0,35.299999237060497,36.400001525878899,37.200000762939503,39.400001525878899,39.599998474121101,40.900001525878899,42.400001525878899,44.099998474121101,46.5,48.200000762939503,48.799999237060497,48.200000762939503,48.799999237060497,49.5,49.799999237060497,52.900001525878899,53.200000762939503,53.900001525878899",
+                style={'width': '20%',
+                'height':'50%'},
+            ),
+            html.Br(),
+            # INPUT BOX 2 - Sample 2
+            html.Label('Sample 2:'),
+            dcc.Textarea(
+                id='sample2_dat',
+                placeholder='Paste Samples Here',
+                value="2.8838200569152797,2.8038499355316202,2.7584900856018102,2.67040991783142,2.3940498828887899,2.5,2.1617600917816202,2.0391499996185298,1.95848000049591,1.7732000350952102,1.77026998996735,1.5852799415588399,1.6556299924850499,1.6111099720001201,1.5548399686813401,1.58095002174377,1.6265399456024199,1.4610799551010099,1.4712599515914899,1.47411000728607,1.35052001476288,1.3061699867248502,1.27751004695892,1.73649001121521,1.4665299654007,1.5130100250244098,1.3514900207519498,1.2755800485611,1.3128800392150901,1.2010999917983998,1.14563000202179,1.0616099834442101,0.98237997293472301,0.96687000989913907,1.0490900278091402,0.97118997573852506,1.0529199838638299,0.99735999107360795,1.0574799776077299,1.1056499481201201,1.0321300029754601,0.96696001291274991,0.940129995346069,0.95502001047134411,0.94533997774124101,0.93307000398635898,0.97259002923965499,0.98754000663757291,0.97913998365402188,0.97118997573852506,0.94599002599716198,0.94862002134323087",
+                style={'width': '20%',
+                'height':'50%'},
+            ),
+
+            html.Label('Result Correlation:'),
+            html.Div(id='pearson_correl_output'),
+        ]),
+        html.Br(),
+ 
+    html.Div(
+        [
+            dcc.Graph(id='pearson_correl-graph')
+
+        ]),
+
+    html.Br(),
+    html.Br(),
+
+])
+
+#BAR GRAPH - PE
+@app.callback(
+        dash.dependencies.Output('pearson_correl_output','children'),
+            [dash.dependencies.Input('sample1_dat','value'),
+            dash.dependencies.Input('sample2_dat','value'),
+            ])
+def update_correl(sample1_dat,sample2_dat):
+     #sample 1 input
+    #if comma separated values
+    if "," in sample1_dat:
+        p1 = np.asarray(sample1_dat.split(','),dtype=np.float32)
+    # #if space separated values
+    elif " " in sample1_dat:
+        # pe_prices = pe_prices.replace('\n', ',')
+        p1 = np.asarray(sample1_dat.split(' '),dtype=np.float32)
+    # #if line delimited values
+    else:
+        sample1_dat = sample1_dat.replace('\n', ',')
+        p1 = np.asarray(sample1_dat.split(','),dtype=np.float32)
+    
+    #sample 2 input
+    #if comma separated values
+    if "," in sample2_dat:
+        p2 = np.asarray(sample2_dat.split(','),dtype=np.float32)
+    # #if space separated values
+    elif " " in sample2_dat:
+        # pe_quantities = pe_quantities.replace('\n', ',')
+        p2 = np.asarray(sample2_dat.split(' '),dtype=np.float32)
+    # #if line delimited values
+    else:
+        sample2_dat = sample2_dat.replace('\n', ',')
+        p2 = np.asarray(sample2_dat.split(','),dtype=np.float32)
+
+    pd.DataFrame()
+    df = pd.DataFrame(
+    {'sample1': p2,
+     'sample2': p1})
+
+    corr = df.corr(method="pearson").iloc[0,1]
+
+    return 'The correlation coefficient is: "{}"'.format(corr)
+
+#LINE GRAPH - PRICE ELASTICITY
+@app.callback(dash.dependencies.Output('pearson_correl-graph','figure'),
+            [dash.dependencies.Input('sample1_dat','value'),
+            dash.dependencies.Input('sample2_dat','value'),
+            ])
+def update_correlgraph(sample1_dat,sample2_dat):
+    #sample 1 input
+    #if comma separated values
+    if "," in sample1_dat:
+        p1 = np.asarray(sample1_dat.split(','),dtype=np.float32)
+    # #if space separated values
+    elif " " in sample1_dat:
+        # pe_prices = pe_prices.replace('\n', ',')
+        p1 = np.asarray(sample1_dat.split(' '),dtype=np.float32)
+    # #if line delimited values
+    else:
+        sample1_dat = sample1_dat.replace('\n', ',')
+        p1 = np.asarray(sample1_dat.split(','),dtype=np.float32)
+    
+    #sample 2 input
+    #if comma separated values
+    if "," in sample2_dat:
+        p2 = np.asarray(sample2_dat.split(','),dtype=np.float32)
+    # #if space separated values
+    elif " " in sample2_dat:
+        # pe_quantities = pe_quantities.replace('\n', ',')
+        p2 = np.asarray(sample2_dat.split(' '),dtype=np.float32)
+    # #if line delimited values
+    else:
+        sample2_dat = sample2_dat.replace('\n', ',')
+        p2 = np.asarray(sample2_dat.split(','),dtype=np.float32)
+
+    df = pd.DataFrame(
+    {'sample1': p2,
+     'sample2': p1})
+
+    trace1 = go.Scatter(
+                x=df['sample1'],
+                y=df['sample2'],
+                mode = 'markers',
+                name = 'Scatter Plot'
+            )
+
+    return {
+       
+        'data':[trace1],
+        'layout': {
+            'title': 'Scatter Plot',
+            'xaxis' : {'title': 'Sample 2'},
+            'yaxis' : {'title': 'Sample 1'},
+        }
+    }
+
 # INDEX
 #############################################################################
 #############################################################################
@@ -919,6 +1383,12 @@ def display_page(pathname):
         return page_5_layout
     elif pathname == '/cvar':
         return page_6_layout
+    elif pathname == '/pe':
+        return page_7_layout
+    elif pathname == '/pe_raw':
+        return page_8_layout
+    elif pathname == '/pearson_correl':
+        return page_9_layout
     else:
         return index_page
     # You could also return a 404 "URL not found" page here
