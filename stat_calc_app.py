@@ -34,6 +34,15 @@ print(dcc.__version__) # 0.6.0 or above is required
 
 app = dash.Dash()
 
+# TO-DO LIST
+#####################################
+# Solving for Optimal Price from Demand Function (raw values)
+
+# Financial Calculators:
+    # PV of annuity
+    # FV of annuity
+
+
 # Since we're adding callbacks to elements that don't exist in the app.layout,
 # Dash will raise an exception to warn us that we might be
 # doing something wrong.
@@ -106,6 +115,8 @@ index_page = html.Div([
     html.Br(),
     html.H2('Financial:'),
     dcc.Link('Credit Value at Risk',href='/cvar'),
+    html.Br(),
+    dcc.Link('Miscellaneous Finance',href='/financial_misc'),
     html.Br(),
     html.H2('Economic:'),
     dcc.Link('Price Elasticity of Demand - Values',href='/pe'),
@@ -371,7 +382,7 @@ page_3_layout = html.Div([
     dcc.Textarea(
         id='sample1_dat_ttest',
         placeholder="Paste Samples Here",
-            value="54,231,554,322,553,111",
+            value="64.2,28.4,85.3,83.1,13.4,56.8,44.2,90",
         style={'width': '20%',
         'height':'50%'},
     ),
@@ -380,18 +391,18 @@ page_3_layout = html.Div([
     dcc.Textarea(
         id='sample2_dat_ttest',
         placeholder='Paste Samples Here',
-        value='54,231,554,322,553,111',
+        value="45,29.5,32.3,49.3,18.3,34.2,43.9,13.8,27.4,43.4",
         style={'width': '20%'}
     ),
     html.Br(),
     html.Div(id='sample1_dat_summ'),
-    # html.Div([
-    #         dcc.Graph(id='ttest-graph')
-
-    #     ]),
-    # html.Br(),
+    html.Br(),
     html.Label('T Test P-Value:'),
     html.Div(id='ttest_result'),
+    html.Br(),
+    html.Div([
+            dcc.Graph(id='ttest-graph')
+        ]),
     html.Br(),
     # dcc.Link('Go to Page 1', href='/sample_size_calculator'),
     html.Br(),
@@ -403,95 +414,59 @@ page_3_layout = html.Div([
               [dash.dependencies.Input('sample1_dat_ttest', 'value'),
               dash.dependencies.Input('sample2_dat_ttest', 'value')
               ])
-def sample1_dat_summ(sample1_dat_ttest,sample2_dat_ttest):
+def ttest_result(sample1_dat_ttest,sample2_dat_ttest):
     p1, p2 = text_parse(sample1_dat_ttest,sample2_dat_ttest)
     t, p = ttest_ind(p1, p2, equal_var=False)
-    # return p
+    
     return 'The p-value is: "{}"'.format(p)
 
-# WIP - CREATE KERNEL DENSITY PLOTS
-# KERNEL DENSITY - TTEST
-# @app.callback(dash.dependencies.Output('ttest-graph','figure'),
-#             [dash.dependencies.Input('sample1_dat_ttest','value')])
-# def update_ttestgraph(sample1_dat_ttest):
-#     #if comma separated values
-#     if "," in sample1_dat_ttest:
-#         p = np.asarray(sample1_dat_ttest.split(','),dtype=np.float32)
-#         # p = sum(p)
-#     # #if space separated values
-#     elif " " in sample1_dat_ttest:
-#         # sample1_dat_ttest = sample1_dat_ttest.replace('\n', ',')
-#         p = np.asarray(sample1_dat_ttest.split(' '),dtype=np.float32)
-#         # p = sum(p)
-#     # #if line delimited values
-#     else:
-#         sample1_dat_ttest = sample1_dat_ttest.replace('\n', ',')
-#         p = np.asarray(sample1_dat_ttest.split(','),dtype=np.float32)
-#         # p = sum(p)
-#     # np.random.seed(1)
-#     # N = 20
-#     # X = np.concatenate((np.random.normal(0, 1, 0.3 * N),
-#     #                     np.random.normal(5, 1, 0.7 * N)))[:, np.newaxis]
-#     # X_plot = np.linspace(-5, 10, 1000)[:, np.newaxis]
-#     # bins = 10
-#     # X = eval('[' + sample1_dat_ttest + ']')
-#     # sample1_dat_ttest = sample1_dat_ttest.split(',')
-#     # p = np.asarray(p)
-    
-#     # np.random.seed(1)
-#     # N = 20
-#     # X = np.concatenate((np.random.normal(0, 1, 0.3 * N),
-#     #                     np.random.normal(5, 1, 0.7 * N)))[:, np.newaxis]
-#     # X_plot = np.linspace(-5, 10, 1000)[:, np.newaxis]
-#     # bins = 10
 
+@app.callback(dash.dependencies.Output('ttest-graph', 'figure'),
+              [dash.dependencies.Input('sample1_dat_ttest', 'value'),
+              dash.dependencies.Input('sample2_dat_ttest', 'value')
+              ])
+def ttest_plot(sample1_dat_ttest,sample2_dat_ttest):
+    p1, p2 = text_parse(sample1_dat_ttest,sample2_dat_ttest)
 
-#     # kde = KernelDensity(kernel='gaussian', bandwidth=0.75).fit(X)
-#     # log_dens = kde.score_samples(X_plot)
+    p1_mean = np.mean(p1)
+    p1_std = np.std(p1)
 
-#     return {
-#         # go.Figure(
-#         'data':[
-#             # go.Scatter(x=X, y=np.exp(log_dens), 
-#             #                 mode='lines', fill='tozeroy',
-#             #                 line=dict(color='#AAAAFF', width=2)),
-#             # {'x':[X],
-#             # 'y':[np.exp(log_dens)], 
-#             # 'mode':'lines', 
-#             # 'fill':'tozeroy',
-#             # 'line':dict(color='#AAAAFF', width=2)},
+    p2_mean = np.mean(p2)
+    p2_std = np.std(p2)
 
-#             trace0 = go.Scatter(
-#                 x = random_x,
-#                 y = random_y0,
-#                 mode = 'lines',
-#                 name = 'lines'
-#             )
+    s1 = np.random.normal(p1_mean, p1_std, 1000)
+    s2 = np.random.normal(p2_mean, p2_std, 1000)
 
-#             go.Bar(
-#                 x=[1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003,
-#                    2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012],
-#                 y=[219, 146, 112, 127, 124, 180, 236, 207, 236, 263,
-#                    350, 430, 474, 526, 488, 537, 500, 439],
-#                 name='Rest of world',
-#                 marker=go.Marker(
-#                     color='rgb(55, 83, 109)'
-#                 )
-#             )
-#             ]
-#             # 'data': [
-#             #     {'x': [1,2], 
-#             #     'y': [sample1_prop,sample2_prop], 
-#             #     'error_y':{
-#             #         "array":[err1,err2]},
-#             #     'type': 'bar', 'name': 'SF2'},
-#             #     ],
-#             #     'layout': {
-#             #         'title': 'Dash Data Visualization'
-#             #     }
-#         }
+    import matplotlib.pyplot as plt
+    count1, bins1, ignored1 = plt.hist(s1, 30, normed=True)
+    count2, bins2, ignored2 = plt.hist(s2, 30, normed=True)
 
+    lines1 = 1/(p1_std * np.sqrt(2 * np.pi)) * np.exp( - (bins1 - p1_mean)**2 / (2 * p1_std**2))
+    lines2 = 1/(p2_std * np.sqrt(2 * np.pi)) * np.exp( - (bins2 - p2_mean)**2 / (2 * p2_std**2))
 
+    trace1 = go.Scatter(
+            x=bins1,
+            y=lines1,
+            mode = 'lines',
+            name = 'Sample 1'
+        )
+
+    trace2 = go.Scatter(
+            x=bins2,
+            y=lines2,
+            mode = 'lines',
+            name = 'Sample 2'
+        )
+
+    return {
+        'data':[trace1,trace2],
+        'layout': {
+                'title': 'Density Plots',
+                'xaxis' : {'title': ''},
+                'yaxis' : {'title': ''},
+            }
+       
+    }
 
 #PAGE 4 - 2 SAMPLE SURVIVAL TIMES
 ##############################################################################
@@ -596,7 +571,6 @@ def update_survivalgraph(sample1_dat_survival,sample2_dat_survival,
             )
 
     return {
-       
         'data':[trace1,trace2],
         'layout': {
                 'title': 'Survival Function Plot',
@@ -798,7 +772,7 @@ page_6_layout = html.Div([
             ),
 
             # INPUT BOX 6 - Loss %
-            html.Label('Loss %:'),
+            html.Label('Loss Probability:'),
             dcc.Input(
                 id='loss_pct',
                 placeholder='0.05',
@@ -1065,6 +1039,13 @@ page_8_layout = html.Div([
         ]),
 
     html.Br(),
+    html.Div(
+        [
+            dcc.Graph(id='pe_raw2-graph')
+
+        ]),
+
+    html.Br(),
     html.Br(),
     dcc.Link('Go back to home', href='/'),
 
@@ -1105,17 +1086,57 @@ def update_pegraph(pe_prices,pe_quantities):
     DEMAND = df['demand']
     # QUANT = df['quantity']
     PRICE = df['price']
-
+    
     trace1 = go.Scatter(
                 x=DEMAND,
                 y=PRICE,
                 mode = 'lines',
                 name = 'Quantity Demanded'
             )
-
+    
     return {
        
         'data':[trace1],
+        'layout': {
+            'title': 'Demand as a Function of Price',
+            'xaxis' : {'title': 'Quantity Demand'},
+            'yaxis' : {'title': 'Price'},
+        }
+       
+    }
+
+#LINE GRAPH - PRICE ELASTICITY (LOG SCALE)
+@app.callback(dash.dependencies.Output('pe_raw2-graph','figure'),
+            [dash.dependencies.Input('pe_prices','value'),
+            dash.dependencies.Input('pe_quantities','value'),
+            ])
+def update_pegraph2(pe_prices,pe_quantities):
+
+    p1, p2 = text_parse(pe_prices,pe_quantities)
+
+    df = pd.DataFrame(
+    {'quantity': p2,
+     'price': p1})
+
+    df['demand'] = ""
+    for idx,row in df.iterrows():
+        x = np.sum(df[df['price']>=row['price']]['quantity'])
+        df.set_value(idx,'demand',x)
+    
+    df['demand'] = df['demand'].astype(float)
+    PRICE_LOG = np.log(np.log(df['price']))
+    DEMAND_LOG = np.log(df['demand'])
+
+    trace2 = go.Scatter(
+            x=DEMAND_LOG,
+            y=PRICE_LOG,
+            mode = 'lines',
+            name = 'Quantity Demanded'
+        )
+
+    return {
+       
+        'data':[trace2],
         'layout': {
             'title': 'Demand as a Function of Price',
             'xaxis' : {'title': 'Quantity Demand'},
@@ -1223,6 +1244,135 @@ def update_correlgraph(sample1_dat,sample2_dat):
         }
     }
 
+#PAGE 10 - FINANCIAL MISC
+##############################################################################
+##############################################################################
+#Text
+markdown_text_finance_calc = '''
+    Price Elasticity of Demand is...
+'''
+
+page_10_layout = html.Div([
+    html.H1('Financial Calculator Misc'),
+    dcc.Markdown(children=markdown_text_finance_calc),
+    dcc.Link('Go back to home', href='/'),
+    html.Br(),
+
+        html.Div(
+        [
+            # INPUT BOX 1 - Discount Rate
+            html.Label('Calculation Type:'),
+            # dcc.Input(
+            #     id='calc_type',
+            #     placeholder='Present Value',
+            #     type='text',
+            #     value='Present Value'
+            # ),
+            dcc.Dropdown(
+                id='calc_type',
+                options=[
+                    {'label': 'Present Value of an Annuity', 'value': 'PV_A'},
+                    {'label': 'Present Value of a Growing Annuity', 'value': 'PV_GA'},
+                    {'label': 'Present Value of a Perpetuity', 'value': 'PV_P'},
+                    {'label': 'Present Value of a Growing Perpetuity', 'value': 'PV_GP'},
+                    {'label': 'Future Value of an Annuity', 'value': 'FV_A'},
+                ],
+            value='PV_A'
+            ),
+
+            # INPUT BOX 1 - Discount Rate
+            html.Label('Discount Rate:'),
+            dcc.Input(
+                id='discount_rate',
+                placeholder='0.05',
+                type='text',
+                value='0.05'
+            ),
+
+            # INPUT BOX 2 - Growth Rate
+            html.Label('Growth Rate:'),
+            dcc.Input(
+                id='growth_rate',
+                placeholder='0.03',
+                type='text',
+                value='0.03'
+            ),
+
+            # INPUT BOX 2 - Payment Amount
+            html.Label('Payment Amt:'),
+            dcc.Input(
+                id='pmt_amt',
+                placeholder='50',
+                type='text',
+                value='50'
+            ),
+
+            # INPUT BOX 3 - Number of Periods
+            html.Label('Number of Periods:'),
+            dcc.Input(
+                id='num_periods',
+                placeholder='12',
+                type='text',
+                value='12'
+            ),
+
+            html.Label('Result Amount:'),
+            html.Div(id='result'),
+        ]),
+        html.Br(),
+        html.Br(),
+        html.Br(),
+        html.Br(),
+        html.Br(),
+        html.Br(),
+    html.Div(
+        [
+            # dcc.Graph(id='chisq-graph')
+
+        ]),
+
+    html.Br(),
+    html.Br(),
+    dcc.Link('Go back to home', href='/'),
+
+])
+
+@app.callback(
+    dash.dependencies.Output('result','children'),
+            [dash.dependencies.Input('discount_rate','value'),
+            dash.dependencies.Input('growth_rate','value'),
+            dash.dependencies.Input('pmt_amt','value'),
+            dash.dependencies.Input('num_periods','value'),
+            dash.dependencies.Input('calc_type','value'),
+            ])
+def update_fincalc(discount_rate,growth_rate,
+                        pmt_amt,num_periods,calc_type):
+
+    result = ""
+    pmt_amt = float(pmt_amt)
+    discount_rate = float(discount_rate)
+    num_periods = float(num_periods)
+    growth_rate = float(growth_rate)
+    
+    if calc_type == "PV_A":
+        result = pmt_amt * (1/discount_rate) * (1 - (1/(1+discount_rate)**num_periods))
+
+    elif calc_type == "PV_GA":
+        result = pmt_amt * (1/(discount_rate-growth_rate) * (1 - ((1+growth_rate)/(1+discount_rate))**num_periods))
+    
+    elif calc_type == "PV_P":
+        result = pmt_amt/discount_rate
+
+    elif calc_type == "PV_GP":
+        result = pmt_amt/(discount_rate - growth_rate)
+
+    elif calc_type == "FV_A":
+        result = pmt_amt * (1/discount_rate) * ((1+discount_rate)**num_periods - 1)
+
+
+    return 'The result is: "${}"'.format(result)
+
+
 # INDEX
 #############################################################################
 #############################################################################
@@ -1249,6 +1399,8 @@ def display_page(pathname):
         return page_8_layout
     elif pathname == '/pearson_correl':
         return page_9_layout
+    elif pathname == '/financial_misc':
+        return page_10_layout
     else:
         return index_page
     # You could also return a 404 "URL not found" page here
