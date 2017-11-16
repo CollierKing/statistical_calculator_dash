@@ -24,6 +24,7 @@ from scipy.stats import beta
 from scipy.stats import poisson
 # survival
 from lifelines.statistics import logrank_test
+from scipy.stats import gamma
 # price elasticity
 import statsmodels.api as sm
 # r-squared
@@ -131,6 +132,16 @@ page_1_layout = html.Div([
         
     html.H1('Sample Size Calculator'),
     dcc.Link('Go back to home', href='/'),
+    
+    # dcc.Markdown(children=sample_size),
+    html.Br(),
+    html.P('When planning an A/B test, it is important \
+            to calculate how many subjects are needed \
+            to determine a given change \
+            in the conversion or baseline rate... \
+            This computation requires a pre-defined \
+            significance level and statistical power.', className='blue-text'),
+    dcc.Link('Reading Link: Statistical Power',href='https://en.wikipedia.org/wiki/Statistical_power'),
 
     html.Div(
         [
@@ -173,15 +184,17 @@ page_1_layout = html.Div([
                 value='0.05'
             ),
             html.Br(),
-
-            html.Label('Sample Size:'),
+            html.Br(),
+            html.Label('Result:'),
             html.Div(id='sample_size_content'),
             html.Br(),
             html.Br(),
-        ],
+        ],style={'columnCount': 2},
     ),
     html.Br(),
-    html.Br(),
+    html.P(
+        'Conversion rates within the error bar range \
+        will be indistinguishable from the baseline rate.', className='blue-text'),
     html.Div(
         [
             dcc.Graph(id='example-graph')
@@ -190,7 +203,7 @@ page_1_layout = html.Div([
     html.Br(),
     html.Br()
     
-],style={'columnCount': 2})
+])
 
 #BAR GRAPH - SAMPLE SIZE
 @app.callback(dash.dependencies.Output('example-graph','figure'),
@@ -201,14 +214,16 @@ def update_graph(baseline_input,effect_size_input):
     err_bar = float(effect_size_input)-float(baseline_input)
     return {
             'data': [
-                {'x': [1], 
-                'y': [baseline_input], 
-                'error_y':{
+                {'x': [baseline_input], 
+                'y': ['Conversion Rate'], 
+                'error_x':{
                     "array":[err_bar]},
-                'type': 'bar', 'name': 'SF'},
+                'type': 'bar', 'name': 'SF',
+                'orientation':'h'},
                 ],
                 'layout': {
-                    'title': 'Baseline with Effect'
+                    'title': 'Baseline with Effect',
+                    'subtitle': 'Plot Subtitle'
                 }
             }
 
@@ -235,16 +250,15 @@ def sample_size_content(baseline_input, effect_size_input,significance_level_inp
 ##############################################################################
 ##############################################################################
 #Text
-markdown_text_chi_squared = '''
-    A Chi-Squared-Test is...
-'''
 
 page_2_layout = html.Div([
     html.H1('Chi Squared Test'),
-    dcc.Markdown(children=markdown_text_chi_squared),
     dcc.Link('Go back to home', href='/'),
     html.Br(),
-
+    html.P(
+        'In an A/B test, a Chi Squared Test can be used to compare success rates \
+        across different samples.'
+    ),
         html.Div(
         [
             # INPUT BOX 1 - Sample1 Successes
@@ -268,6 +282,7 @@ page_2_layout = html.Div([
             ),
 
             html.Br(),
+            html.Br(),
 
             # INPUT BOX 3 - Sample2 Successes
             html.Label('Sample 2: # successes'),
@@ -289,7 +304,8 @@ page_2_layout = html.Div([
                 value='1000'
             ),
             html.Br(),
-
+            ],style={'columnCount': 2}),
+        html.Div([
             # INPUT BOX 5 - Confidence Level
             html.Label('Confidence Level:'),
             dcc.Input(
@@ -299,28 +315,11 @@ page_2_layout = html.Div([
                 value='0.95'
             ),
             html.Br(),
-            html.Br(),
-
-            html.Label('Result p-value:'),
+            html.Label('Result:'),
             html.Div(id='chisq_content'),
-        ]),
-        html.Br(),
-        html.Br(),
-        html.Br(),
-        html.Br(),
-        html.Br(),
-        html.Br(),
-    html.Div(
-        [
-            dcc.Graph(id='chisq-graph')
-
-        ]),
-
-
-    html.Br(),
-    html.Br()
-
-],style={'columnCount': 2})
+                    dcc.Graph(id='chisq-graph')
+            ])
+        ])
 
 #BAR GRAPH - CHISQ - SAMPLE PROPORTIONS
 @app.callback(dash.dependencies.Output('chisq-graph','figure'),
@@ -345,16 +344,19 @@ def update_chisqgraph(sample1_trials,sample1_successes,
             np.sqrt( (sample2_prop * ( 1-sample2_prop))/int(sample2_trials))
     return {
             'data': [
-                {'x': [1,2], 
-                'y': [sample1_prop,sample2_prop], 
-                'error_y':{
+                {'y': ['sample1','sample2'], 
+                'x': [sample1_prop,sample2_prop], 
+                'error_x':{
                     "array":[err1,err2]},
-                'type': 'bar', 'name': 'SF2'},
+                'type': 'bar', 
+                'name': 'SF2',
+                'orientation':'h'},
                 ],
                 'layout': {
                     'title': 'Sample Proportions'
                 }
             }
+    
 # ChiSq
 @app.callback(dash.dependencies.Output('chisq_content', 'children'),
               [dash.dependencies.Input('sample1_successes', 'value'),
@@ -378,22 +380,25 @@ page_3_layout = html.Div([
     html.H1('Two Sample T-Test'),
     dcc.Link('Go back to home', href='/'),
     html.Br(),
-    html.Label('Sample 1 Values:'),
-    dcc.Textarea(
-        id='sample1_dat_ttest',
-        placeholder="Paste Samples Here",
-            value="64.2,28.4,85.3,83.1,13.4,56.8,44.2,90",
-        style={'width': '20%',
-        'height':'50%'},
-    ),
-    html.Br(),
-    html.Label('Sample 2 Values:'),
-    dcc.Textarea(
-        id='sample2_dat_ttest',
-        placeholder='Paste Samples Here',
-        value="45,29.5,32.3,49.3,18.3,34.2,43.9,13.8,27.4,43.4",
-        style={'width': '20%'}
-    ),
+    html.Div([
+        html.Label('Sample 1 Values:'),
+        dcc.Textarea(
+            id='sample1_dat_ttest',
+            placeholder="Paste Samples Here",
+                value="64.2,28.4,85.3,83.1,13.4,56.8,44.2,90",
+            style={'width': '20%',
+            'height':'50%'},
+        ),
+        html.Br(),
+        html.Label('Sample 2 Values:'),
+        dcc.Textarea(
+            id='sample2_dat_ttest',
+            placeholder='Paste Samples Here',
+            value="45,29.5,32.3,49.3,18.3,34.2,43.9,13.8,27.4,43.4",
+            style={'width': '20%'}),
+    
+    ],style={'columnCount': 2}),
+
     html.Br(),
     html.Div(id='sample1_dat_summ'),
     html.Br(),
@@ -473,27 +478,30 @@ def ttest_plot(sample1_dat_ttest,sample2_dat_ttest):
 ##############################################################################
 page_4_layout = html.Div([
 
-    html.H1('Survival Times'),
+    html.H1('Survival Times - Curves'),
     dcc.Link('Go back to home', href='/'),
     html.Br(),
-    # INPUT BOX 1 - Sample 1
-    html.Label('Sample 1:'),
-    dcc.Textarea(
-        id='sample1_dat_survival',
-        placeholder="Paste Samples Here",
-            value="1,1,2,3,4,4,5,5,8,8,8,8,11,11,12,12,15,17,22,23",
-        style={'width': '20%',
-        'height':'50%'},
-    ),
+    dcc.Link('Compare means', href='/2_sample_survival_means'),
     html.Br(),
-    # INPUT BOX 2 - Sample 2
-    html.Label('Sample 2:'),
-    dcc.Textarea(
-        id='sample2_dat_survival',
-        placeholder='Paste Samples Here',
-        value='6,6,7,9,10,11,13,15,16,19,20,22,23,32,6,10,17,19,24,25,25,28,28,32,33,34,35,39',
-        style={'width': '20%'}
-    ),
+    html.Div([
+        # INPUT BOX 1 - Sample 1
+        html.Label('Sample 1:'),
+        dcc.Textarea(
+            id='sample1_dat_survival',
+            placeholder="Paste Samples Here",
+                value="1,1,2,3,4,4,5,5,8,8,8,8,11,11,12,12,15,17,22,23",
+            style={'width': '20%',
+            'height':'50%'},
+        ),
+        html.Br(),
+        # INPUT BOX 2 - Sample 2
+        html.Label('Sample 2:'),
+        dcc.Textarea(
+            id='sample2_dat_survival',
+            placeholder='Paste Samples Here',
+            value='6,6,7,9,10,11,13,15,16,19,20,22,23,32,6,10,17,19,24,25,25,28,28,32,33,34,35,39',
+            style={'width': '20%'}),
+    ],style={'columnCount': 2}),
     html.Br(),
     # INPUT BOX 3 - Confidence Level
     html.Label('Confidence Level:'),
@@ -580,6 +588,190 @@ def update_survivalgraph(sample1_dat_survival,sample2_dat_survival,
        
     }
 
+#PAGE 10 - 2 SAMPLE SURVIVAL TIME MEANS
+##############################################################################
+##############################################################################
+page_11_layout = html.Div([
+
+    html.H1('Survival Times'),
+    dcc.Link('Go back to home', href='/'),
+    html.Br(),
+    html.Div([
+        # INPUT BOX 1 - Sample 1
+        html.Label('Sample 1 Size:'),
+        dcc.Input(
+            id='sample1_dat_survival_size',
+            placeholder='100',
+            type='text',
+            value='100'
+        ),
+        html.Br(),
+        # INPUT BOX 2 - Sample 2
+        html.Label('Sample 1 Mean:'),
+        dcc.Input(
+            id='sample1_dat_survival_mean',
+            placeholder='55',
+            type='text',
+            value='55'
+        ),
+        html.Br(),
+        # INPUT BOX 1 - Sample 1
+        html.Label('Sample 2 Size:'),
+        dcc.Input(
+            id='sample2_dat_survival_size',
+            placeholder='120',
+            type='text',
+            value='120'
+        ),
+        html.Br(),
+        # INPUT BOX 2 - Sample 2
+        html.Label('Sample 2 Mean:'),
+        dcc.Input(
+            id='sample2_dat_survival_mean',
+            placeholder='45',
+            type='text',
+            value='45'
+        ),
+    ],style={'columnCount': 2}),
+    html.Br(),
+    # INPUT BOX 3 - Confidence Level
+    html.Label('Confidence Level:'),
+    dcc.Input(
+        id='survival_confidence_level_means',
+        placeholder='0.95',
+        type='text',
+        value='0.95'
+    ),
+    html.Label('Log Rank P-Value:'),
+    html.Div(id='survival_output_means'),
+        html.Div([
+            dcc.Graph(id='survival-graph_means')
+        ]),
+    html.Br(),
+])
+
+#RESULT- SURVIVAL 
+@app.callback(
+    dash.dependencies.Output('survival_output_means','children'),
+            [dash.dependencies.Input('sample1_dat_survival_mean','value'),
+            dash.dependencies.Input('sample1_dat_survival_size','value'),
+            dash.dependencies.Input('sample2_dat_survival_mean','value'),
+            dash.dependencies.Input('sample2_dat_survival_size','value'),
+            dash.dependencies.Input('survival_confidence_level_means','value')
+            ])
+def update_survival(sample1_dat_survival_mean,sample1_dat_survival_size,
+                    sample2_dat_survival_mean,sample2_dat_survival_size,
+                    survival_confidence_level_means):
+
+    if float(sample1_dat_survival_mean) > float(sample2_dat_survival_mean):
+        f1 = float(sample1_dat_survival_mean) / float(sample2_dat_survival_mean)
+        df1 = 2 * float(sample1_dat_survival_size)
+        df2 = 2 * float(sample2_dat_survival_size)
+    else:
+        f1 = float(sample2_dat_survival_mean) / float(sample1_dat_survival_mean)
+        df1 = 2 * float(sample2_dat_survival_size)
+        df2 = 2 * float(sample1_dat_survival_size)
+        
+    p_value = 2 * (1.0 - beta.cdf((df1 * f1) / (df1 * f1 + df2), df1 / 2, df2 / 2))
+    
+    return p_value
+
+    p_result = float(x.p_value)
+
+    return 'The p-value is: "{}"'.format(p_result)
+
+
+#BAR GRAPH - SURVIVAL MEANS
+@app.callback(dash.dependencies.Output('survival-graph_means','figure'),
+            [dash.dependencies.Input('sample1_dat_survival_mean','value'),
+            dash.dependencies.Input('sample1_dat_survival_size','value'),
+            dash.dependencies.Input('sample2_dat_survival_mean','value'),
+            dash.dependencies.Input('sample2_dat_survival_size','value'),
+            dash.dependencies.Input('survival_confidence_level_means','value')
+            ])
+def update_survivalgraph(sample1_dat_survival_mean,sample1_dat_survival_size,
+                        sample2_dat_survival_mean,sample2_dat_survival_size,
+                        survival_confidence_level_means):
+    
+    alpha = float(1 - float(survival_confidence_level_means))
+
+    n1 = float(sample1_dat_survival_size)
+    t1 = float(sample1_dat_survival_mean)
+    
+    n2 = float(sample2_dat_survival_size)
+    t2 = float(sample2_dat_survival_mean)
+    
+    result1 = ( n1 * t1 / gamma.ppf(1-alpha/2, n1), n1 * t1 / gamma.ppf(alpha/2, n1))
+    
+    result2 = ( n2 * t2 / gamma.ppf(1-alpha/2, n2), n2 * t2 / gamma.ppf(alpha/2, n2))
+
+    s_err1 = (result1[1] - result1[0])
+    s_err2 = (result2[1] - result2[0])
+
+    return {
+        'data': [
+            {'y': ['Sample1','Sample2'], 
+            'x': [sample1_dat_survival_mean,sample2_dat_survival_mean], 
+            'error_x':{
+                "array":[s_err1,s_err2]},
+            'type': 'bar', 
+            'name': 'SF3',
+            'orientation':'h'},
+            ],
+            'layout': {
+                'title': 'Survival Times',
+            }
+        }
+
+
+#LINE GRAPH - SURVIVAL
+# @app.callback(dash.dependencies.Output('survival-graph_means','figure'),
+#             [dash.dependencies.Input('sample1_dat_survival_means','value'),
+#             dash.dependencies.Input('sample2_dat_survival_means','value'),
+#             dash.dependencies.Input('survival_confidence_level_means','value')
+#             ])
+# def update_survivalgraph(sample1_dat_survival_means,sample2_dat_survival_means,
+#                         survival_confidence_level_means):
+
+#     p1, p2 = text_parse(sample1_dat_survival_means,sample2_dat_survival_means)
+
+#     y1 = []
+#     for i in np.sort(p1):
+#         x = 1 - np.compress((i > p1), p1).size/len(p1)
+#         y1.append(x)
+
+#     x1 = np.arange(0,len(p1),1).tolist()
+
+#     y2 = []
+#     for i in np.sort(p2):
+#         x = 1 - np.compress((i > p2), p2).size/len(p2)
+#         y2.append(x)
+
+#     x2 = np.arange(0,len(p2),1).tolist()
+
+#     trace1 = go.Scatter(
+#                 x=x1,
+#                 y=y1,
+#                 mode = 'lines',
+#                 name = 'Sample 1'
+#             )
+#     trace2 = go.Scatter(
+#                 x=x2,
+#                 y=y2,
+#                 mode = 'lines',
+#                 name = 'Sample 2'
+#             )
+
+#     return {
+#         'data':[trace1,trace2],
+#         'layout': {
+#                 'title': 'Survival Function Plot',
+#                 'xaxis' : {'title': 'Time'},
+#                 'yaxis' : {'title': 'Survival Rate'},
+#             }
+       
+#     }
+
 #PAGE 5 - Count Data
 ##############################################################################
 ##############################################################################
@@ -632,7 +824,8 @@ page_5_layout = html.Div([
                 type='text',
                 value='1'
             ),
-
+            ],style={'columnCount': 2}),
+            html.Div([
             # INPUT BOX 4 - Confidence Level
             html.Label('Confidence Level:'),
             dcc.Input(
@@ -656,8 +849,7 @@ page_5_layout = html.Div([
     html.Br(),
     html.Br(),
     html.Br(),
-
-],style={'columnCount': 2})
+])
 
 #RESULT- POISSON 
 @app.callback(
@@ -699,11 +891,12 @@ def update_poissongraph(sample1_events,sample1_days,
 
     return {
             'data': [
-                {'x': [1,2], 
-                'y': [sample1_events,sample2_events], 
-                'error_y':{
+                {'y': [1,2], 
+                'x': [sample1_events,sample2_events], 
+                'error_x':{
                     "array":[err1,err2]},
-                'type': 'bar', 'name': 'SF2'},
+                'type': 'bar', 'name': 'SF2',
+                'orientation':'h'},
                 ],
                 'layout': {
                     'title': 'Poisson Confidence Interval'
@@ -720,7 +913,6 @@ markdown_text_chi_squared = '''
 
 page_6_layout = html.Div([
     html.H1('Credit Value at Risk'),
-    dcc.Markdown(children=markdown_text_chi_squared),
     dcc.Link('Go back to home', href='/'),
     html.Br(),
 
@@ -752,7 +944,7 @@ page_6_layout = html.Div([
                 type='text',
                 value='0.25'
             ),
-
+            
             # INPUT BOX 4 - Random Draw Size
             html.Label('Number of Random Draws:'),
             dcc.Input(
@@ -788,12 +980,14 @@ page_6_layout = html.Div([
                 type='text',
                 value='0.05'
             ),
-
-            html.Label('Result VaR:'),
+            ],style={'columnCount': 4}),
+            html.Br(),
+            html.Div([
+            html.Label('Result:'),
             html.Div(id='cvar_output'),
         ]),
         html.Br(),
-    html.Div(
+        html.Div(
         [
             dcc.Graph(id='cvar-graph')
 
@@ -963,7 +1157,7 @@ page_7_layout = html.Div([
         html.Br(),
     html.Div(
         [
-            # dcc.Graph(id='chisq-graph')
+            dcc.Graph(id='pe-graph')
 
         ]),
 
@@ -991,12 +1185,45 @@ def update_pe(original_quantity,new_quantity,
     return 'An increase in price by  1% changes the quantity demanded by: "{}"%'.format(pe)
 
 
+#BAR GRAPH - PE (CHART)
+@app.callback(
+    dash.dependencies.Output('pe-graph','figure'),
+            [dash.dependencies.Input('original_quantity','value'),
+            dash.dependencies.Input('new_quantity','value'),
+            dash.dependencies.Input('original_price','value'),
+            dash.dependencies.Input('new_price','value'),
+            ])
+def update_pe_chart(original_quantity,new_quantity,
+                        original_price,new_price):
+    
+    # pe = ( (float(new_quantity)-float(original_quantity) ) / (float(new_quantity)+float(original_quantity) ) ) /\
+    #  ( (float(new_price) - float(original_price ) ) / (float(new_price) + float(original_price)))
+
+    trace1 = go.Scatter(
+            x=[original_quantity,new_quantity],
+            y=[original_price,new_price],
+            mode = 'lines',
+            name = 'Quantity Demanded'
+        )
+    
+    return {
+       
+        'data':[trace1],
+        'layout': {
+            'title': 'Demand as a Function of Price',
+            'xaxis' : {'title': 'Quantity Demand'},
+            'yaxis' : {'title': 'Price'},
+        }
+       
+    }
+
+
 #PAGE 8 - PRICE ELASTICITY (RAW DATA)
 ##############################################################################
 ##############################################################################
 #Text
 markdown_text_chi_squared = '''
-    Price Elasticity of Demand is...
+    Price elasticity measures responsiveness of quantity demanded to changes in price.  The log-linear demand function implies that the price elasticity of demand is constant.
 '''
 
 page_8_layout = html.Div([
@@ -1180,7 +1407,8 @@ page_9_layout = html.Div([
                 style={'width': '20%',
                 'height':'50%'},
             ),
-
+            ],style={'columnCount': 2}),
+            html.Div([
             html.Label('Result Correlation:'),
             html.Div(id='pearson_correl_output'),
         ]),
@@ -1389,6 +1617,8 @@ def display_page(pathname):
         return page_3_layout
     elif pathname == '/2_sample_survival':
         return page_4_layout
+    elif pathname == '/2_sample_survival_means':
+        return page_11_layout
     elif pathname == '/count_data':
         return page_5_layout
     elif pathname == '/cvar':
