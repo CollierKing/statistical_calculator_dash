@@ -92,7 +92,7 @@ app.layout = html.Div([
 ])
 
 markdown_intro = '''
-    This website is a collection of calculators for solving certain statistical questions.
+    This website is a collection of calculators for solving certain statistical, financial and economic questions.
     '''
 
 index_page = html.Div([
@@ -102,6 +102,8 @@ index_page = html.Div([
     html.Br(),
 
     html.H2('Statistical:'),
+    html.P(
+    'This section has tools related to A/B testing and data comparison across groups.', className='blue-text'),
     dcc.Link('Sample Size Calculator', href='/sample_size_calculator'),
     html.Br(),
     dcc.Link('Chi Squared Test', href='/chi_squared_test'),
@@ -114,7 +116,10 @@ index_page = html.Div([
     html.Br(),
     dcc.Link('Pearson Correlation',href='/pearson_correl'),
     html.Br(),
+
     html.H2('Financial:'),
+    html.P(
+    'This section provided calculations related to finance.', className='blue-text'),
     dcc.Link('Credit Value at Risk',href='/cvar'),
     html.Br(),
     dcc.Link('Miscellaneous Finance',href='/financial_misc'),
@@ -129,22 +134,34 @@ index_page = html.Div([
 # PAGE 1 - SAMPLE SIZE CALCULATOR
 ##############################################################################
 page_1_layout = html.Div([
-        
-    html.H1('Sample Size Calculator'),
-    dcc.Link('Go back to home', href='/'),
-    
-    # dcc.Markdown(children=sample_size),
-    html.Br(),
-    html.P('When planning an A/B test, it is important \
-            to calculate how many subjects are needed \
-            to determine a given change \
-            in the conversion or baseline rate... \
-            This computation requires a pre-defined \
-            significance level and statistical power.', className='blue-text'),
-    dcc.Link('Reading Link: Statistical Power',href='https://en.wikipedia.org/wiki/Statistical_power'),
-
-    html.Div(
-        [
+    html.Div([
+        html.H1('Sample Size Calculator'),
+        dcc.Link('Go back to home', href='/'),
+        html.H3('Description:'),
+        html.P('When planning an A/B test, it is important \
+                to calculate how many subjects are needed \
+                to determine a given change \
+                in the conversion or baseline rate... \
+                This computation requires a pre-defined \
+                significance level and statistical power.', className='blue-text'),
+        dcc.Link('Reading Link: Statistical Power',href='https://en.wikipedia.org/wiki/Statistical_power'),
+        html.H4('Parameters:'),
+        html.Div([
+            html.Strong('Baseline Rate'),
+            html.Br(),
+            html.P("The underlying conversion rate or success rate you are trying to measure against."),
+            html.Strong('Effect Size'),
+            html.Br(),
+            html.P("The new baseline rate which includes the change you are trying to measure."),
+            html.Strong('Power (1-False Negative Rate)'),
+            html.Br(),
+            html.P("WIP."),
+            html.Strong('Significance Level'),
+            html.Br(),
+            html.P("WIP."),
+        ],style={'columnCount': 2,'width': "100%"}),
+        html.H3('Inputs:'),
+        html.Div([
             # INPUT BOX 1 - CONV RATE
             html.Label('Baseline Rate'),
             dcc.Input(
@@ -182,28 +199,26 @@ page_1_layout = html.Div([
                 placeholder='0.05',
                 type='text',
                 value='0.05'
-            ),
-            html.Br(),
-            html.Br(),
-            html.Label('Result:'),
-            html.Div(id='sample_size_content'),
-            html.Br(),
-            html.Br(),
-        ],style={'columnCount': 2},
-    ),
-    html.Br(),
-    html.P(
-        'Conversion rates within the error bar range \
-        will be indistinguishable from the baseline rate.', className='blue-text'),
-    html.Div(
-        [
-            dcc.Graph(id='example-graph')
-        ],
-    ),
-    html.Br(),
-    html.Br()
-    
-])
+                ),
+            ],style={'columnCount': 2,'width': "100%"}),
+        html.Br(),
+        html.Br(),
+        html.Br(),
+        html.Br(),
+        html.Br(),
+        html.Br(),
+        html.Br(),
+        html.H3('Result:'),
+        html.Div(id='sample_size_content'),
+        html.Div([
+            html.H3("Chart:"),
+            html.P(
+                'Conversion rates within the error bar range \
+                will be indistinguishable from the baseline rate.', className='blue-text'),
+            dcc.Graph(id='example-graph'),
+            ],style={'columnCount': 1,'width': "100%",'height': "500%"})
+    ]),
+],style={'columnCount': 2,'width': "100%"})
 
 #BAR GRAPH - SAMPLE SIZE
 @app.callback(dash.dependencies.Output('example-graph','figure'),
@@ -223,7 +238,7 @@ def update_graph(baseline_input,effect_size_input):
                 ],
                 'layout': {
                     'title': 'Baseline with Effect',
-                    'subtitle': 'Plot Subtitle'
+                    'sub title': 'Plot Subtitle'
                 }
             }
 
@@ -243,7 +258,7 @@ def sample_size_content(baseline_input, effect_size_input,significance_level_inp
     n = s * ((zp + z)**2) / (d**2)
     n = int(round(n[0]))
 
-    return 'The Sample Size Is: "{}"'.format(n)
+    return 'The Required Sample Size Is: "{}"'.format(n)
 
 
 #PAGE 2 - CHI-SQUARED TESTS
@@ -255,57 +270,74 @@ page_2_layout = html.Div([
     html.H1('Chi Squared Test'),
     dcc.Link('Go back to home', href='/'),
     html.Br(),
+    html.H3('Description:'),
     html.P(
         'In an A/B test, a Chi Squared Test can be used to compare success rates \
         across different samples.'
     ),
-        html.Div(
-        [
-            # INPUT BOX 1 - Sample1 Successes
-            html.Label('Sample 1: # successes'),
-            dcc.Input(
-                id='sample1_successes',
-                placeholder='150',
-                type='text',
-                value='150'
-            ),
+    #PARAMETERS
+    html.H4("Parameters:"),
+    html.Div(
+    [
+        html.Strong("Sample 1 Successes"),
+        html.P("The number of trials that succeeded in sample 1."),
+        # html.Br(),
+        html.Strong("Sample 1 Trials"),
+        html.P("The number of trials that where conducted in sample 1."),
+        # html.Br(),
+        html.Strong("Sample 2 Successes"),
+        html.P("The number of trials that succeeded in sample 2."),
+        # html.Br(),
+        html.Strong("Sample 2 Trials"),
+        html.P("The number of trials that where conducted in sample 2."),
+        # html.Br(),
+    ],style={'columnCount': 2,'width': "100%"}),
+    html.H3("Inputs:"),
+    #INPUTS
+    html.Div(
+    [
+        # INPUT BOX 1 - Sample1 Successes
+        html.Label('Sample 1: # successes'),
+        dcc.Input(
+            id='sample1_successes',
+            placeholder='150',
+            type='text',
+            value='150'
+        ),
 
-            html.Br(),
+        html.Br(),
 
-            # INPUT BOX 2 - Sample1 Trials
-            html.Label('Sample 1: # trials'),
-            dcc.Input(
-                id='sample1_trials',
-                placeholder='1000',
-                type='text',
-                value='1000'
-            ),
+        # INPUT BOX 2 - Sample1 Trials
+        html.Label('Sample 1: # trials'),
+        dcc.Input(
+            id='sample1_trials',
+            placeholder='1000',
+            type='text',
+            value='1000'
+        ),
 
-            html.Br(),
-            html.Br(),
+        html.Br(),
+        html.Br(),
+        html.Br(),
+        # INPUT BOX 3 - Sample2 Successes
+        html.Label('Sample 2: # successes'),
+        dcc.Input(
+            id='sample2_successes',
+            placeholder='180',
+            type='text',
+            value='180'
+        ),
 
-            # INPUT BOX 3 - Sample2 Successes
-            html.Label('Sample 2: # successes'),
-            dcc.Input(
-                id='sample2_successes',
-                placeholder='180',
-                type='text',
-                value='180'
-            ),
-
-            html.Br(),
-
-            # INPUT BOX 4 - Sample2 Trials
-            html.Label('Sample 2: # trials'),
-            dcc.Input(
-                id='sample2_trials',
-                placeholder='1000',
-                type='text',
-                value='1000'
-            ),
-            html.Br(),
-            ],style={'columnCount': 2}),
-        html.Div([
+        html.Br(),
+        # INPUT BOX 4 - Sample2 Trials
+        html.Label('Sample 2: # trials'),
+        dcc.Input(
+            id='sample2_trials',
+            placeholder='1000',
+            type='text',
+            value='1000'
+        ),
+        html.Br(),
             # INPUT BOX 5 - Confidence Level
             html.Label('Confidence Level:'),
             dcc.Input(
@@ -314,12 +346,22 @@ page_2_layout = html.Div([
                 type='text',
                 value='0.95'
             ),
-            html.Br(),
-            html.Label('Result:'),
-            html.Div(id='chisq_content'),
-                    dcc.Graph(id='chisq-graph')
-            ])
-        ])
+        ],style={'columnCount': 2,'width': "100%"}),
+        # html.Div([
+        html.Br(),
+        html.Br(),
+        html.Br(),
+        html.Br(),
+        html.Br(),
+        html.Br(),
+        html.Br(),
+        html.H3('Result:'),
+        html.Div(id='chisq_content'),
+        html.H3('Chart:'),
+        dcc.Graph(id='chisq-graph')
+            
+        # ],style={'columnCount': 1,'width': "100%",'height': "100%"}),
+    ],style={'columnCount': 2,'width':'100%'})
 
 #BAR GRAPH - CHISQ - SAMPLE PROPORTIONS
 @app.callback(dash.dependencies.Output('chisq-graph','figure'),
